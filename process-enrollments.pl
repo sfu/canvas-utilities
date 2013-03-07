@@ -11,7 +11,7 @@
 
 use lib '/opt/amaint/etc/lib';
 use Canvas;
-use awsomeLinux;
+use awsomeLinux; 	# Local SFU library to handle SOAP calls to fetch course rosters
 use Switch;
 use Getopt::Std;
 

@@ -15,3 +15,12 @@ File summary:
 * course-import/upload-imports.pl - Upload Course Import zip files to their matching Canvas course. Fetches all courses then POSTs the zip files - good example of how to use this code to simulate browser POSTs
 * course-import/trigger-imports.pl - Course content import is an asynchronous process - the content is uploaded, then once it's processed, an 'import' can be triggered to actually import the content. This script triggrers the import process for all courses uploaded by the upload-imports.pl script
 
+<h4>Requirements</h4>
+
+Canvas.pm needs the following Perl modules installed from CPAN:
+ * HTTP::Request::Common
+ * LWP::UserAgent
+ * JSON::Parse 
+
+Amaint-jms.pl requires Net::Stomp to retrieve JMS messages
+
