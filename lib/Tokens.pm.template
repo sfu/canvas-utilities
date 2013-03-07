@@ -1,0 +1,26 @@
+package Tokens;
+require Exporter;
+@ISA    = qw(Exporter);
+@EXPORT = qw(cookie auth_token mquser mqpass oauth_token);
+
+# OAuth token. At a minimum, you must define this to make API calls
+# To generate one, login to Canvas with a site-admin account, click on Settings, then "New Access Token"
+$oauth_token = "";
+
+# Session cookie and authenticity token. These must be taken from a "live" browser session
+# but are only needed if you intend to use the 'post' call in Canvas.pm to simulate
+# browser posts (required if you need functionality that hasn't been exposed through the Canvas API calls).
+# They are typically valid for about 12 hours from last use
+#
+# The cookie is stored in the "_normandy_session" cookie
+$cookie = "400-character string";           # Cookie - grab from browser for a logged in Canvas session for a site admin
+#
+# Authenticity token - grab from "view source" of a browser window for a logged in Canvas session for a site admin
+$auth_token = "44 character string";
+
+# Only needed for JMS communication
+# ActiveMQ Userid and password
+$mquser = "";
+$mqpass = "";
+
+1;
