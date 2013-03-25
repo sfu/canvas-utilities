@@ -175,7 +175,6 @@ sub generate_enrollments
 			$force = 1;
 		}
 
-		print "Processing $sis_id, Name: ",$section->{name},"\n" if $debug;
 
 		if ($sis_id eq "null" || $sis_id eq "")
 		{
@@ -192,6 +191,8 @@ sub generate_enrollments
 		{
 			$sis_id =~ s/:::.*//;
 		}
+
+		print "Processing $sis_id, Name: ",$section->{name},"\n" if $debug;
 
 
 		if ($sis_id =~ /^(list:|group:|file:)/)
