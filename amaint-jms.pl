@@ -25,7 +25,7 @@ use LWP::UserAgent;
 use Canvas;
 use Tokens;
 
-$debug=1;
+$debug=0;
 
 # If your ActiveMQ brokers are configured as a master/slave pair, define
 # both hosts here. This script will try the primary, then try the failover
