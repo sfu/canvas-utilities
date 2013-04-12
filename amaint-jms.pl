@@ -39,8 +39,8 @@ $secondary_host = undef;
 
 $port = 61613;
 
-$mquser = $Tokens::$mquser;
-$mqpass = $Tokens::$mqpass;
+$mquser = $Tokens::mquser;
+$mqpass = $Tokens::mqpass;
 
 $inqueue = "/queue/ICAT.amaint.toCanvas";
 
