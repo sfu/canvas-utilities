@@ -43,16 +43,21 @@ my ($currentTerm,$previousTerm);
 # Global counters
 my ($total_enrollments,%total_users,$total_sections);
 
-getopt('f');
+getopts('chf:');
 
 push @enrollments_csv,"course_id,user_id,role,section_id,status,associated_user_id";
 $users_csv = "user_id,login_id,password,first_name,last_name,email,status\n";
 
 # Main block
 {
+	if (defined($opt_h))
+	{
+		HELP_MESSAGE();
+		exit 1;
+	}
 	getService();
 	getTerm();
-	fetch_courses_and_sections() or error_exit("Couldn't fetch courses and sections from Canvas!");
+	fetch_courses_and_sections($opt_c) or error_exit("Couldn't fetch courses and sections from Canvas!");
 	if (!defined($opt_f))
 	{
 		fetch_users() or error_exit("Couldn't fetch user list from Canvas!");
@@ -66,9 +71,22 @@ $users_csv = "user_id,login_id,password,first_name,last_name,email,status\n";
 	exit 0;
 }
 
+sub HELP_MESSAGE
+{
+	print <<EOM;
+Usage:
+ no arguments: 				process all enrolments for all non-completed Canvas courses and sections
+           -c: 				include completed courses
+   -f sis_section_id[,sis_section_id]: 	process only the specified Canvas section(s). 
+					this will also empty the enrolment if the data source indicates there are no enrolments
+	   -h:				This message
+EOM
+}
+
 sub fetch_courses_and_sections
 {
     	my (@sections);
+	my $completed = shift;
 
 	# If we're just handling a specific section or sections, don't bother fetching all courses and sections
 	if (defined($opt_f))
@@ -86,7 +104,8 @@ sub fetch_courses_and_sections
 	}
 	else
 	{
-		$courses = rest_to_canvas_paginated("/api/v1/accounts/$account_id/courses");
+		my $completed_string = ($completed) ? "" : "?completed=false";
+		$courses = rest_to_canvas_paginated("/api/v1/accounts/$account_id/courses".$completed_string);
 		return undef if (!defined($courses));
 
 		print "Retrieved ",scalar(@{$courses})," courses from Canvas\n";
