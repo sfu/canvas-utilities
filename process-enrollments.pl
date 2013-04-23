@@ -387,6 +387,14 @@ sub add_new_users
 		print "Adding new user to csv: $sfuid,$user,$givenname,$lastname\n" if $debug;
 		$users_csv .= "$sfuid,$user,,$givenname,$lastname,$user\@sfu.ca,active\n";
 		$users_need_adding++;
+
+		# Bit of a hack, but we want to avoid pulling all users from Canvas if we're just
+		# processing one section, so add the users directly to our internal hashes
+		if (defined($opt_f))
+		{
+			$users_by_username{$user} = { "sis_user_id" => $sfuid };
+		}
+					
 	}
 }
 
@@ -439,7 +447,7 @@ sub do_enrollments
 # We're only willing to wait so long though before we throw an error
 sub process_user_adds
 {
-	return if (!$users_need_adding);
+	return if (!$users_need_adding || defined($opt_f));
 	print "Adding $users_need_adding users to Canvas\n";
 	if ($debug < 3)
 	{
