@@ -65,23 +65,41 @@ $users_csv = "user_id,login_id,password,first_name,last_name,email,status\n";
 
 sub fetch_courses_and_sections
 {
-	my (@sections);
-	$courses = rest_to_canvas_paginated("/api/v1/accounts/$account_id/courses");
-	return undef if (!defined($courses));
+    	my (@sections);
 
-	print "Retrieved ",scalar(@{$courses})," courses from Canvas\n";
-
-	foreach $course (@{$courses})
+	# If we're just handling a specific section or sections, don't bother fetching all courses and sections
+	if (defined($opt_f))
 	{
-		$c_id = $course->{id};
-		$courses_by_id{$c_id} = $course;
-		$course_sections = rest_to_canvas_paginated("/api/v1/courses/$c_id/sections");
-		if (!defined($course_sections))
+		foreach $sec (split(/,/,$opt_f))
 		{
-			print "Couldn't get sections for course $c_id\n";
-			return undef;
+			$course_section = rest_to_cavas("/api/v1/sections/sis_section_id:$sec");
+			if (!defined($course_section))
+			{
+				print "Couldn't get section for sis_section_id $sec\n";
+				return undef;
+			}
+			push @sections,@{$course_section};
 		}
-		push @sections,@{$course_sections};
+	}
+	else
+	{
+		$courses = rest_to_canvas_paginated("/api/v1/accounts/$account_id/courses");
+		return undef if (!defined($courses));
+
+		print "Retrieved ",scalar(@{$courses})," courses from Canvas\n";
+
+		foreach $course (@{$courses})
+		{
+			$c_id = $course->{id};
+			$courses_by_id{$c_id} = $course;
+			$course_sections = rest_to_canvas_paginated("/api/v1/courses/$c_id/sections");
+			if (!defined($course_sections))
+			{
+				print "Couldn't get sections for course $c_id\n";
+				return undef;
+			}
+			push @sections,@{$course_sections};
+		}
 	}
 
 	print "Retrieved ",scalar(@sections), " sections from Canvas\n";
