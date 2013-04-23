@@ -53,7 +53,10 @@ $users_csv = "user_id,login_id,password,first_name,last_name,email,status\n";
 	getService();
 	getTerm();
 	fetch_courses_and_sections() or error_exit("Couldn't fetch courses and sections from Canvas!");
-	fetch_users() or error_exit("Couldn't fetch user list from Canvas!");
+	if (!defined($opt_f))
+	{
+		fetch_users() or error_exit("Couldn't fetch user list from Canvas!");
+	}
 	generate_enrollments();
 	print @skipmsgs;
 	process_user_adds();
@@ -72,13 +75,13 @@ sub fetch_courses_and_sections
 	{
 		foreach $sec (split(/,/,$opt_f))
 		{
-			$course_section = rest_to_cavas("/api/v1/sections/sis_section_id:$sec");
+			$course_section = rest_to_canvas("GET","/api/v1/sections/sis_section_id:$sec");
 			if (!defined($course_section))
 			{
 				print "Couldn't get section for sis_section_id $sec\n";
 				return undef;
 			}
-			push @sections,@{$course_section};
+			push @sections,$course_section;
 		}
 	}
 	else
@@ -132,7 +135,7 @@ sub fetch_user
 {
 	$u_id = shift;
 	return undef if ($u_id < 1);
-	$user = rest_to_canvas("/api/v1/users/$u_id/profile");
+	$user = rest_to_canvas("GET","/api/v1/users/$u_id/profile");
 	return undef if (!defined($user));
 	if ($user->{sis_user_id})
 	{
