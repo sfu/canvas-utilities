@@ -127,6 +127,22 @@ sub fetch_users
 	return 1;
 }
 
+# Fetch a single user by Canvas userID. Adds the user to our internal hashes
+sub fetch_user
+{
+	$u_id = shift;
+	return undef if ($u_id < 1);
+	$user = rest_to_canvas("/api/v1/users/$u_id/profile");
+	return undef if (!defined($user));
+	if ($user->{sis_user_id})
+	{
+		$users_by_username{$user->{login_id}} = $user;
+		$users_by_id{$user->{id}} = $user;
+	}
+
+	return 1;
+}
+
 # Calculate the current term. This could get replaced with a REST call in the future
 # This is a rather clumsy, brute force attempt. We've arbitrarily set term start dates
 # of May 5 and Sep 1. This should be ok though because we also populate all *future*
@@ -186,13 +202,8 @@ sub generate_enrollments
 			@all_enrollments = ();
 		}
 
-		if (defined($opt_f))
-		{
-			$force = 0;
-			next if ($opt_f !~ /\Q$sis_id\E/);
-			$force = 1;
-		}
-
+		$force = 0;
+		$force = 1 if (defined($opt_f));
 
 		if ($sis_id eq "null" || $sis_id eq "")
 		{
@@ -254,8 +265,21 @@ sub generate_enrollments
 		my (@current_enrollments);
 		foreach $en (@{$enrollments})
 		{
-			# Skip all but student enrollments
-			# TODO: But we need to check whether ObserverEnrollment needs to be deleted if a StudentEnrollment for the same user gets added
+			my $res = 1;
+			# If we're force-handling just specific sections, fetch each user as we encounter them if necessary
+			if ($force && !defined($users_by_id{$en->user_id}))
+			{
+				$res = fetch_user($en->{user_id});
+				if (!$res)
+				{
+					# This should never happen (communcations error with Canvas maybe?)
+					# but we can't retrieve a user that Canvas just told us is registered in the course
+					# Throw a big fat error 
+					print STDERR "Unable to retrieve user ",$en->{user_id}," from Canvas! Can't continue\n";
+					return undef;
+				}
+			}
+
 			if ($en->{type} eq "ObserverEnrollment")
 			{
 				$observers{$users_by_id{$en->{user_id}}->{login_id}} = $section;
