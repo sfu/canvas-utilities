@@ -65,23 +65,41 @@ $users_csv = "user_id,login_id,password,first_name,last_name,email,status\n";
 
 sub fetch_courses_and_sections
 {
-	my (@sections);
-	$courses = rest_to_canvas_paginated("/api/v1/accounts/$account_id/courses");
-	return undef if (!defined($courses));
+    	my (@sections);
 
-	print "Retrieved ",scalar(@{$courses})," courses from Canvas\n";
-
-	foreach $course (@{$courses})
+	# If we're just handling a specific section or sections, don't bother fetching all courses and sections
+	if (defined($opt_f))
 	{
-		$c_id = $course->{id};
-		$courses_by_id{$c_id} = $course;
-		$course_sections = rest_to_canvas_paginated("/api/v1/courses/$c_id/sections");
-		if (!defined($course_sections))
+		foreach $sec (split(/,/,$opt_f))
 		{
-			print "Couldn't get sections for course $c_id\n";
-			return undef;
+			$course_section = rest_to_cavas("/api/v1/sections/sis_section_id:$sec");
+			if (!defined($course_section))
+			{
+				print "Couldn't get section for sis_section_id $sec\n";
+				return undef;
+			}
+			push @sections,@{$course_section};
 		}
-		push @sections,@{$course_sections};
+	}
+	else
+	{
+		$courses = rest_to_canvas_paginated("/api/v1/accounts/$account_id/courses");
+		return undef if (!defined($courses));
+
+		print "Retrieved ",scalar(@{$courses})," courses from Canvas\n";
+
+		foreach $course (@{$courses})
+		{
+			$c_id = $course->{id};
+			$courses_by_id{$c_id} = $course;
+			$course_sections = rest_to_canvas_paginated("/api/v1/courses/$c_id/sections");
+			if (!defined($course_sections))
+			{
+				print "Couldn't get sections for course $c_id\n";
+				return undef;
+			}
+			push @sections,@{$course_sections};
+		}
 	}
 
 	print "Retrieved ",scalar(@sections), " sections from Canvas\n";
@@ -105,6 +123,22 @@ sub fetch_users
 		$users_by_id{$u->{id}} = $u;
 	}
 	print join("\nUser: ",sort(keys %users_by_username)) if ($debug > 2);
+
+	return 1;
+}
+
+# Fetch a single user by Canvas userID. Adds the user to our internal hashes
+sub fetch_user
+{
+	$u_id = shift;
+	return undef if ($u_id < 1);
+	$user = rest_to_canvas("/api/v1/users/$u_id/profile");
+	return undef if (!defined($user));
+	if ($user->{sis_user_id})
+	{
+		$users_by_username{$user->{login_id}} = $user;
+		$users_by_id{$user->{id}} = $user;
+	}
 
 	return 1;
 }
@@ -168,13 +202,8 @@ sub generate_enrollments
 			@all_enrollments = ();
 		}
 
-		if (defined($opt_f))
-		{
-			$force = 0;
-			next if ($opt_f !~ /\Q$sis_id\E/);
-			$force = 1;
-		}
-
+		$force = 0;
+		$force = 1 if (defined($opt_f));
 
 		if ($sis_id eq "null" || $sis_id eq "")
 		{
@@ -236,8 +265,21 @@ sub generate_enrollments
 		my (@current_enrollments);
 		foreach $en (@{$enrollments})
 		{
-			# Skip all but student enrollments
-			# TODO: But we need to check whether ObserverEnrollment needs to be deleted if a StudentEnrollment for the same user gets added
+			my $res = 1;
+			# If we're force-handling just specific sections, fetch each user as we encounter them if necessary
+			if ($force && !defined($users_by_id{$en->user_id}))
+			{
+				$res = fetch_user($en->{user_id});
+				if (!$res)
+				{
+					# This should never happen (communcations error with Canvas maybe?)
+					# but we can't retrieve a user that Canvas just told us is registered in the course
+					# Throw a big fat error 
+					print STDERR "Unable to retrieve user ",$en->{user_id}," from Canvas! Can't continue\n";
+					return undef;
+				}
+			}
+
 			if ($en->{type} eq "ObserverEnrollment")
 			{
 				$observers{$users_by_id{$en->{user_id}}->{login_id}} = $section;
