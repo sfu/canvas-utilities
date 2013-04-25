@@ -199,6 +199,7 @@ sub fetch_enrollments
 
 		# We calculate stats on all sections, but we'll track sis and non-sis courses differently
 
+		$type = "";
 		if ($sis_id !~ /:::/)
 		{
 			$is_sis = 0;
