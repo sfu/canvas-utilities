@@ -187,6 +187,9 @@ sub fetch_enrollments
 		$c_id = $section->{'course_id'};
 		if ($c_id != $old_c_id)
 		{
+			# if the last section in the previous course was of type 'term', we just processed an SIS course
+			$sis_courses++ if ($type eq "term"); 
+
 			# Starting a new course. Sum results for last course
 			$total_courses++;
 			$old_c_id = $c_id;
@@ -274,6 +277,7 @@ sub summary()
 	print "\n\nSummary:\n";
 	print "Total sections processed: $total_sections\n";
 	print "Total courses: $total_courses\n";
+	print "Total for-credit courses: $sis_courses\n";
 	print "Total enrolments: $total_enrollments\n";
 	print "Total teachers and designer enrolments: $designer_or_teacher\n";
 	print "Total Observer enrolments: $observers\n";
