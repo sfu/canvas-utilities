@@ -278,7 +278,7 @@ sub summary()
 	print "Total teachers and designer enrolments: $designer_or_teacher\n";
 	print "Total Observer enrolments: $observers\n";
 	print "Total course seats: $course_seats\n";
-	print "Total unique users enrolled: ", scalar(keys %total_users),"\n";
+	print "Total unique students enrolled: ", scalar(keys %total_users),"\n";
 }
 
 
