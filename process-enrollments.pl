@@ -284,7 +284,7 @@ sub generate_enrollments
 		}
 
 		# Generate a list of usernames that are currently in the course
-		my (@current_enrollments);
+		my (@current_enrollments,@teachers);
 		foreach $en (@{$enrollments})
 		{
 			my $res = 1;
@@ -307,8 +307,11 @@ sub generate_enrollments
 				$observers{$users_by_id{$en->{user_id}}->{login_id}} = $section;
 				next;
 			}
-			next if ($en->{type} ne "StudentEnrollment");
+			# next if ($en->{type} ne "StudentEnrollment");
+			# Everyone, even teachers/designers, goes into the list of current enrollments
 			push (@current_enrollments, $users_by_id{$en->{user_id}}->{login_id});
+			# Track the teachers/designers separately as well
+			push (@teachers, $users_by_id{$en->{user_id}}->{login_id}) if ($en->{type} ne "StudentEnrollment");
 		}
 		print "Users in section: \n",join(",",sort @current_enrollments),"\n" if $debug;
 
@@ -317,6 +320,9 @@ sub generate_enrollments
 		switch ($type) {
 		    case "list" {
 			@new_enrollments = split(/:::/,membersOfMaillist($type_source));
+			# Since we added teachers/designers to the current enrollment list,
+			# include them in the new enrollments too so we don't try to drop them
+			push (@new_enrollments,@teachers);
 			break;
 		    }
 		    case "file" {
