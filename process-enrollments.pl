@@ -284,7 +284,7 @@ sub generate_enrollments
 		}
 
 		# Generate a list of usernames that are currently in the course
-		my (@current_enrollments,@teachers);
+		my (@current_enrollments,%teachers);
 		foreach $en (@{$enrollments})
 		{
 			my $res = 1;
@@ -309,9 +309,9 @@ sub generate_enrollments
 			}
 			# next if ($en->{type} ne "StudentEnrollment");
 			# Everyone, even teachers/designers, goes into the list of current enrollments
-			push (@current_enrollments, $users_by_id{$en->{user_id}}->{login_id});
+			push (@current_enrollments, $users_by_id{$en->{user_id}}->{login_id}) if ($en->{type} eq "StudentEnrollment");
 			# Track the teachers/designers separately as well
-			push (@teachers, $users_by_id{$en->{user_id}}->{login_id}) if ($en->{type} ne "StudentEnrollment");
+			$teachers{$users_by_id{$en->{user_id}}->{login_id}}++ if ($en->{type} ne "StudentEnrollment");
 		}
 		print "Users in section: \n",join(",",sort @current_enrollments),"\n" if $debug;
 
@@ -320,9 +320,6 @@ sub generate_enrollments
 		switch ($type) {
 		    case "list" {
 			@new_enrollments = split(/:::/,membersOfMaillist($type_source));
-			# Since we added teachers/designers to the current enrollment list,
-			# include them in the new enrollments too so we don't try to drop them
-			push (@new_enrollments,@teachers);
 			break;
 		    }
 		    case "file" {
@@ -389,8 +386,8 @@ sub generate_enrollments
 
 		# Now convert the adds and drops into enrollments and de-enrollments
 		print "Processing ",scalar(@{$adds})," Adds and ",scalar(@{$drops})," Drops for section ",$section->{name},"\n";
-		add_enrollments($adds,$section);
-		drop_enrollments($drops,$section);
+		add_enrollments($adds,$section,\%teachers);
+		drop_enrollments($drops,$section,\%teachers);
 	}
 	check_observers(\%observers,\@all_enrollments);
 }
@@ -437,7 +434,7 @@ sub check_observers
 		foreach my $dup (@dups)
 		{
 		    print "Deleting Observer $dup from ",$observers->{$dup}->{sis_section_id},"\n" if ($debug);
-		    do_enrollments([$dup],$observers->{$dup},"deleted","observer");
+		    do_enrollments([$dup],$observers->{$dup},{},"deleted","observer");
 		}
 	    }
 	}
@@ -455,12 +452,17 @@ sub drop_enrollments
 
 sub do_enrollments
 {
-	my ($users,$section,$status,$role) = @_;
+	my ($users,$section,$teachers,$status,$role) = @_;
 
 	$role = "student" if (!defined($role));
 
 	foreach my $user (@{$users})
 	{
+		# If we were given a list of teachers, don't add or drop them
+		if (defined($teachers))
+		{
+			next if (defined($teachers->{$user}));
+		}
 		my $user_id = defined($users_by_username{$user}) ? $users_by_username{$user}->{sis_user_id} : "##$user##";
 
 		# course_id, sfuid, role, section_id, status, associated_user_id(blank)
