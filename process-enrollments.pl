@@ -43,7 +43,7 @@ my ($currentTerm,$previousTerm);
 # Global counters
 my ($total_enrollments,%total_users,$total_sections);
 
-getopts('chf:');
+getopts('chd:f:');
 
 push @enrollments_csv,"course_id,user_id,role,section_id,status,associated_user_id";
 $users_csv = "user_id,login_id,password,first_name,last_name,email,status\n";
@@ -55,6 +55,7 @@ $users_csv = "user_id,login_id,password,first_name,last_name,email,status\n";
 		HELP_MESSAGE();
 		exit 1;
 	}
+	$debug = $opt_d if (defined($opt_d));
 	getService();
 	getTerm();
 	fetch_courses_and_sections($opt_c) or error_exit("Couldn't fetch courses and sections from Canvas!");
@@ -63,7 +64,7 @@ $users_csv = "user_id,login_id,password,first_name,last_name,email,status\n";
 		fetch_users() or error_exit("Couldn't fetch user list from Canvas!");
 	}
 	generate_enrollments();
-	print @skipmsgs;
+	print @skipmsgs if $debug;
 	process_user_adds();
 	process_enrollments();
 	summary();
@@ -77,6 +78,9 @@ sub HELP_MESSAGE
 Usage:
  no arguments: 				process all enrolments for all non-completed Canvas courses and sections
            -c: 				include completed courses
+	   -d [0-3]			Debug level. Default is currently 1 (verbose). 
+					  2 == submit user adds but not enrolment changes. 
+					  3 == submit no changes. Dump all HTTP traffic to Canvas
    -f sis_section_id[,sis_section_id]: 	process only the specified Canvas section(s). 
 					this will also empty the enrolment if the data source indicates there are no enrolments
 	   -h:				This message
