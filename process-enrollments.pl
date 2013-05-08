@@ -461,7 +461,7 @@ sub do_enrollments
 		# If we were given a list of teachers, don't add or drop them
 		if (defined($teachers))
 		{
-			if (defined($teachers->{$user}));
+			if (defined($teachers->{$user}))
 			{
 				print "Not processing Teacher: $user\n" if ($debug);
 				next;
