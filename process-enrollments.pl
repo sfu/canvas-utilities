@@ -293,7 +293,7 @@ sub generate_enrollments
 		{
 			my $res = 1;
 			# If we're force-handling just specific sections, fetch each user as we encounter them if necessary
-			if ($force && !defined($users_by_id{$en->user_id}))
+			if ($force && !defined($users_by_id{$en->{user_id}}))
 			{
 				$res = fetch_user($en->{user_id});
 				if (!$res)
