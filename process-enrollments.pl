@@ -351,7 +351,8 @@ sub generate_enrollments
 
 		if (scalar(@new_enrollments) == 0 && !$force)
 		{
-			print STDERR "New Enrollments for ",$section->{name}," is empty! Won't process without \'force\'\n";
+			# Only print a warning if Canvas course does have enrollments
+			print STDERR "New Enrollments for ",$section->{name}," is empty! Won't process without \'force\'\n" if (scalar(@current_enrollments) > 0);
 			next;
 		}
 
