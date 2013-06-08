@@ -411,7 +411,7 @@ sub generate_enrollments
 				next if ($s != $section);
 				# Student was manually added to this section and is now in SIS feed. Put through a 'drop' before
 				# their 'add' and remove the section from the list so we don't drop them again later in the code
-				push(@drops,$add);
+				push(@{$drops},$add);
 				print "Manually added student $add is now in SIS source\n" if $debug;
 				$s = undef;
 			    }
