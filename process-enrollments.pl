@@ -304,6 +304,7 @@ sub generate_enrollments
 			# If we're force-handling just specific sections, fetch each user as we encounter them if necessary
 			if ($force && !defined($users_by_id{$en->{user_id}}))
 			{
+				print "Fetching $en->{user_id} from Canvas\n" if ($debug > 1);
 				$res = fetch_user($en->{user_id});
 				if (!$res)
 				{
@@ -323,6 +324,7 @@ sub generate_enrollments
 			# Was this enrollment a manual one?
 			if (!$en->{sis_batch_id})
 			{
+				print "Found manual student $$en->{user_id}}->{login_id}\n" if ($debug > 1);
 				$manuals{$users_by_id{$en->{user_id}}->{login_id}} = () if (!defined($manuals{$users_by_id{$en->{user_id}}->{login_id}}));
 				push(@{$manuals{$users_by_id{$en->{user_id}}->{login_id}}}, $section);
 				next;
