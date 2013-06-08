@@ -327,6 +327,8 @@ sub generate_enrollments
 				print "Found manual student $users_by_id{$en->{user_id}}->{login_id}\n" if ($debug > 1);
 				$manuals{$users_by_id{$en->{user_id}}->{login_id}} = () if (!defined($manuals{$users_by_id{$en->{user_id}}->{login_id}}));
 				push(@{$manuals{$users_by_id{$en->{user_id}}->{login_id}}}, $section);
+				print $manuals{$users_by_id{$en->{user_id}}->{login_id}},"\n" if ($debug > 1);
+				print join(",",@{$manuals{$users_by_id{$en->{user_id}}->{login_id}}},"\n" if ($debug > 1);
 				next;
 			}
 
