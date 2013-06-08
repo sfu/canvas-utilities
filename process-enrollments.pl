@@ -324,7 +324,7 @@ sub generate_enrollments
 			# Was this enrollment a manual one?
 			if (!$en->{sis_batch_id})
 			{
-				print "Found manual student $$en->{user_id}}->{login_id}\n" if ($debug > 1);
+				print "Found manual student $en->{user_id}}->{login_id}\n" if ($debug > 1);
 				$manuals{$users_by_id{$en->{user_id}}->{login_id}} = () if (!defined($manuals{$users_by_id{$en->{user_id}}->{login_id}}));
 				push(@{$manuals{$users_by_id{$en->{user_id}}->{login_id}}}, $section);
 				next;
