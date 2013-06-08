@@ -404,17 +404,17 @@ sub generate_enrollments
 		foreach $add (@{$adds})
 		{
 			push (@new_users,$add) if (!defined($users_by_username{$add}));
-			# Note: "~~" operator only available in Perl 5.10.1+. Means "smartmatch". In this case, check every element in the array stored in $manuals{$add}
-			if (defined($manuals{$add}) && ($section ~~ @{$manuals{$add}} ))
+			if (defined($manuals{$add}))
 			{
+			    foreach $s (@{$manuals{$add}})
+			    {
+				next if ($s != $section);
 				# Student was manually added to this section and is now in SIS feed. Put through a 'drop' before
 				# their 'add' and remove the section from the list so we don't drop them again later in the code
 				push(@drops,$add);
 				print "Manually added student $add is now in SIS source\n" if $debug;
-				foreach (@{$manuals{$add}})
-				{
-					$_ = undef if ($_ == $section);
-				}
+				$s = undef;
+			    }
 			}
 		}
 		if (scalar(@new_users))
@@ -465,12 +465,14 @@ sub check_observers
 	my ($observers,$all_enrollments,$manual) = @_;
 	if (scalar(keys %{$observers}))
 	{
+	    print "Processing observer/manuals\n" if ($debug > 1);
 	    # There were observers in the previous course, see if any got added as students
 	    my (%count,@dups);
 	    map $count{$_}++ , keys %{$observers}, @{$all_enrollments};
 	    @dups = grep $count{$_} == 2, keys %{$observers};
 	    if (scalar(@dups))
 	    {
+		print "  Processing ",scalar(@dups)," users\n" if ($debug > 1);
 		foreach my $dup (@dups)
 		{
 		    if ($manual)
