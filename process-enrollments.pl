@@ -323,7 +323,8 @@ sub generate_enrollments
 			# Was this enrollment a manual one?
 			if (!$en->{sis_batch_id})
 			{
-				$manuals{$users_by_id{$en->{user_id}}->{login_id}} = $section;
+				$manuals{$users_by_id{$en->{user_id}}->{login_id}} = () if (!defined($manuals{$users_by_id{$en->{user_id}}->{login_id}}));
+				push(@{$manuals{$users_by_id{$en->{user_id}}->{login_id}}}, $section);
 				next;
 			}
 
@@ -399,10 +400,17 @@ sub generate_enrollments
 		foreach $add (@{$adds})
 		{
 			push (@new_users,$add) if (!defined($users_by_username{$add}));
-			if (defined($manuals{$add}) && $manuals{$add} == $section)
+			# Note: "~~" operator only available in Perl 5.10.1+. Means "smartmatch". In this case, check every element in the array stored in $manuals{$add}
+			if (defined($manuals{$add}) && ($section ~~ @{$manuals{$add}} ))
 			{
-				delete($manuals{$add});
+				# Student was manually added to this section and is now in SIS feed. Put through a 'drop' before
+				# their 'add' and remove the section from the list so we don't drop them again later in the code
+				push(@drops,$add);
 				print "Manually added student $add is now in SIS source\n" if $debug;
+				foreach (@{$manuals{$add}})
+				{
+					$_ = undef if ($_ == $section);
+				}
 			}
 		}
 		if (scalar(@new_users))
@@ -413,8 +421,8 @@ sub generate_enrollments
 
 		# Now convert the adds and drops into enrollments and de-enrollments
 		print "Processing ",scalar(@{$adds})," Adds and ",scalar(@{$drops})," Drops for section ",$section->{name},"\n";
-		add_enrollments($adds,$section,\%teachers);
 		drop_enrollments($drops,$section,\%teachers);
+		add_enrollments($adds,$section,\%teachers);
 	}
 	check_observers(\%observers,\@all_enrollments);
 	check_observers(\%manuals,\@all_enrollments,1);
@@ -453,7 +461,6 @@ sub check_observers
 	my ($observers,$all_enrollments,$manual) = @_;
 	if (scalar(keys %{$observers}))
 	{
-	    my $observer = ($manual) ? "student" : "observer";
 	    # There were observers in the previous course, see if any got added as students
 	    my (%count,@dups);
 	    map $count{$_}++ , keys %{$observers}, @{$all_enrollments};
@@ -462,8 +469,19 @@ sub check_observers
 	    {
 		foreach my $dup (@dups)
 		{
-		    print "Deleting Observer $dup from ",$observers->{$dup}->{sis_section_id},"\n" if ($debug);
-		    do_enrollments([$dup],$observers->{$dup},{},"deleted",$observer);
+		    if ($manual)
+		    {
+			foreach $s (@{$observers->{$dup}})
+			{
+			    print "Deleting Manual Student $dup from ",$s->{sis_section_id},"\n" if ($debug);
+		    	    do_enrollments([$dup],$s,{},"deleted","observer");
+			}
+		    }
+		    else
+		    {
+			print "Deleting Observer $dup from ",$observers->{$dup}->{sis_section_id},"\n" if ($debug);
+		    	do_enrollments([$dup],$observers->{$dup},{},"deleted","observer");
+		    }
 		}
 	    }
 	}
