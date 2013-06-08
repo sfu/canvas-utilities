@@ -207,10 +207,17 @@ sub getTerm
 #
 # We also check for observer roles in *any* section of a course. After checking all sections of a course,
 # we check all current enrollments and see if they match any observer role and if so, remove the observer role
+#
+# Support for manually added students: Students with no sis_batch_id defined are treated almost identically
+# to observers, but are kept in a separate hash. For any 'manual' user who is enrolled in one section and then
+# shows up in the SIS source for a different section, they'll be added to the new section and deleted from the
+# old section. If a 'manual' user is in the same section as the SIS source, the user is deleted from the hash 
+# so that they're not deleted from the section right after being added. We're counting on Canvas doing the
+# "right thing" and converting an enrollment from 'manual' to 'sis'. If it doesn't, we'll have to code around that
 
 sub generate_enrollments
 {
-	my ($c_id,$old_c_id,@all_enrollments,%observers);
+	my ($c_id,$old_c_id,@all_enrollments,%observers,%manuals);
 	my $force = 0;
 
 	foreach $section (@{$sections})
@@ -224,7 +231,9 @@ sub generate_enrollments
 			# Starting a new course. See if there were any observers in the last course
 			$old_c_id = $c_id;
 			check_observers(\%observers,\@all_enrollments);
+			check_observers(\%manuals,\@all_enrollments,1);
 			%observers = ();
+			%manuals = ();
 			@all_enrollments = ();
 		}
 
@@ -311,6 +320,13 @@ sub generate_enrollments
 				$observers{$users_by_id{$en->{user_id}}->{login_id}} = $section;
 				next;
 			}
+			# Was this enrollment a manual one?
+			if (!$en->{sis_batch_id})
+			{
+				$manuals{$users_by_id{$en->{user_id}}->{login_id}} = $section;
+				next;
+			}
+
 			# next if ($en->{type} ne "StudentEnrollment");
 			# Everyone, even teachers/designers, goes into the list of current enrollments
 			push (@current_enrollments, $users_by_id{$en->{user_id}}->{login_id}) if ($en->{type} eq "StudentEnrollment");
@@ -377,11 +393,17 @@ sub generate_enrollments
 		}
 
 		# Go through our 'adds' and see if there are any users here who aren't in Canvas yet
+		# or who were 'manuals' in this section
 
 		my (@new_users);
 		foreach $add (@{$adds})
 		{
 			push (@new_users,$add) if (!defined($users_by_username{$add}));
+			if (defined($manuals{$add}) && $manuals{$add} == $section)
+			{
+				delete($manuals{$add});
+				print "Manually added student $add is now in SIS source\n" if $debug;
+			}
 		}
 		if (scalar(@new_users))
 		{
@@ -395,6 +417,7 @@ sub generate_enrollments
 		drop_enrollments($drops,$section,\%teachers);
 	}
 	check_observers(\%observers,\@all_enrollments);
+	check_observers(\%manuals,\@all_enrollments,1);
 }
 
 
@@ -427,9 +450,10 @@ sub add_new_users
 
 sub check_observers
 {
-	my ($observers,$all_enrollments) = @_;
+	my ($observers,$all_enrollments,$manual) = @_;
 	if (scalar(keys %{$observers}))
 	{
+	    my $observer = ($manual) ? "student" : "observer";
 	    # There were observers in the previous course, see if any got added as students
 	    my (%count,@dups);
 	    map $count{$_}++ , keys %{$observers}, @{$all_enrollments};
@@ -439,7 +463,7 @@ sub check_observers
 		foreach my $dup (@dups)
 		{
 		    print "Deleting Observer $dup from ",$observers->{$dup}->{sis_section_id},"\n" if ($debug);
-		    do_enrollments([$dup],$observers->{$dup},{},"deleted","observer");
+		    do_enrollments([$dup],$observers->{$dup},{},"deleted",$observer);
 		}
 	    }
 	}
