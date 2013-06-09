@@ -326,9 +326,7 @@ sub generate_enrollments
 			{
 				print "Found manual student $users_by_id{$en->{user_id}}->{login_id}\n" if ($debug > 1);
 				$manuals{$users_by_id{$en->{user_id}}->{login_id}} = () if (!defined($manuals{$users_by_id{$en->{user_id}}->{login_id}}));
-				push(@{$manuals{$users_by_id{$en->{user_id}}->{login_id}}}, $section);
-				print $manuals{$users_by_id{$en->{user_id}}->{login_id}},"\n" if ($debug > 1);
-				print join(",",@{$manuals{$users_by_id{$en->{user_id}}->{login_id}}},"\n") if ($debug > 1);
+				push(@{$manuals{$users_by_id{$en->{user_id}}->{login_id}}}, $en);
 				next;
 			}
 
@@ -404,18 +402,6 @@ sub generate_enrollments
 		foreach $add (@{$adds})
 		{
 			push (@new_users,$add) if (!defined($users_by_username{$add}));
-			if (defined($manuals{$add}))
-			{
-			    foreach $s (@{$manuals{$add}})
-			    {
-				next if ($s != $section);
-				# Student was manually added to this section and is now in SIS feed. Put through a 'drop' before
-				# their 'add' and remove the section from the list so we don't drop them again later in the code
-				push(@{$drops},$add);
-				print "Manually added student $add is now in SIS source\n" if $debug;
-				$s = undef;
-			    }
-			}
 		}
 		if (scalar(@new_users))
 		{
@@ -460,6 +446,16 @@ sub add_new_users
 	}
 }
 
+
+# Handle deleting Observers or "Manual students" who now show up in the SIS feed.
+# $observers = ref to hash of either section objects (observers) or array of enrollment objects (manuals). Key is SFU computing ID
+# $all_enrollments = ref to array of all SFU computing IDs in SIS source
+# $manual = boolean flag - set to '1' for 'manual student' processing
+#
+# If we find a match in the Observers ref and all_enrollments ref:
+#  - for Observer: add record to sis_import to delete observer enrollment
+#  - for Manual: do API call to enrollment api to delete each enrollment in array 
+
 sub check_observers
 {
 	my ($observers,$all_enrollments,$manual) = @_;
@@ -477,10 +473,14 @@ sub check_observers
 		{
 		    if ($manual)
 		    {
-			foreach $s (@{$observers->{$dup}})
+			foreach $en (@{$observers->{$dup}})
 			{
-			    print "Deleting Manual Student $dup from ",$s->{sis_section_id},"\n" if ($debug);
-		    	    do_enrollments([$dup],$s,{},"deleted","observer");
+			    print "Deleting Manual Student $dup from section ",$en->{section_id},"\n" if ($debug);
+			    $res = rest_to_canvas("DELETE","/api/v1/enrollments/".$en->{id});
+			    if (!$res)
+			    {
+				print STDERR "Error deleting enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
+			    }
 			}
 		    }
 		    else
