@@ -396,7 +396,6 @@ sub generate_enrollments
 		}
 
 		# Go through our 'adds' and see if there are any users here who aren't in Canvas yet
-		# or who were 'manuals' in this section
 
 		my (@new_users);
 		foreach $add (@{$adds})
@@ -476,7 +475,7 @@ sub check_observers
 			foreach $en (@{$observers->{$dup}})
 			{
 			    print "Deleting Manual Student $dup from section ",$en->{section_id},"\n" if ($debug);
-			    $res = rest_to_canvas("DELETE","/api/v1/enrollments/".$en->{id});
+			    $res = rest_to_canvas("DELETE","/api/v1/courses/".$en->{course_id}."/enrollments/".$en->{id}."?task=delete");
 			    if (!$res)
 			    {
 				print STDERR "Error deleting enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
