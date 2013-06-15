@@ -26,7 +26,7 @@ for($ac_id=1;$ac_id < $max_account;$ac_id++)
 
 foreach $ac_id (sort keys %accounts_by_id)
 {
-	$courses = rest_to_canvas_paginated("/api/v1/accounts/$ac_id/courses");
+	$courses = rest_to_canvas_paginated("/api/v1/accounts/$ac_id/courses?per_page=200");
 	push (@all_courses,@{$courses}) if defined($courses);
 }
 

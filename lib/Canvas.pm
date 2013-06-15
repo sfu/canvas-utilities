@@ -130,7 +130,7 @@ sub rest_to_canvas_paginated
     my $json_as_strings = [];
     my ($json, $json_string);
 
-    $uri = $uri . $sep . "per_page=5000";
+    $uri = $uri . $sep . "per_page=5000" if ($uri !~ /per_page=/);
 
     if ($params == 1)
     {
