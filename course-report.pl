@@ -57,9 +57,5 @@ foreach $course (@all_courses)
 	}
 
 	# Finally, print out the result in CSV format
-	print   $course->{name}.",";
-	print	$course_info->{term}->{name}.",";
-	print	$accounts_by_id{$course_info->{account_id}}->{name};
-	print	",\"$teachers\",\"$teacher_emails\"\n";
-#	print   $course->{name}.",".  $course_info->{term}->{name}.",".  $accounts_by_id{$course_info->{account_id}}->{name}.  ",\"$teachers\",\"$teacher_emails\"\n";
+	print   "\"".$course->{name}."\",\"". $course_info->{term}->{name}."\",\"". $accounts_by_id{$course_info->{account_id}}->{name}.  "\",\"$teachers\",\"$teacher_emails\"\n";
 }
