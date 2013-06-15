@@ -4,26 +4,30 @@ use lib '/opt/amaint/etc/lib';
 use Canvas;
 # use awsomeLinux; 	# Local SFU library to handle SOAP calls to fetch course rosters
 
-# $Canvas::debug=1;
+$Canvas::debug=1;
 
 # getService();
 
 my (@all_courses);
 
+$max_account = 20;
+
 # First, fetch all accounts
+# Stupid: API call "/api/v1/accounts" doesn't return all accounts. Need to iterate over every possible account number
 
-$accounts = rest_to_canvas("GET","/api/v1/accounts");
-
-die "Couldn't retrieve accounts" if (!defined($accounts));
+for($ac_id=1;$ac_id < $max_account;$ac_id++)
+{
+	$ac = rest_to_canvas("GET","/api/v1/accounts/$ac_id");
+	next if (!defined($ac) || $ac->{status} eq "not_found");
+	$accounts_by_id{$ac_id} = $ac;
+}
 
 # Then, iterate through each account, collect the courses for that account
 
-foreach $ac (@{$accounts})
+foreach $ac_id (keys %accounts_by_id)
 {
-	$ac_id = $ac->{id};
 	$courses = rest_to_canvas_paginated("/api/v1/accounts/$ac_id/courses");
 	push (@all_courses,@{$courses}) if defined($courses);
-	$accounts_by_id{$ac_id} = $ac;
 }
 
 # Now we have all courses for all accounts
