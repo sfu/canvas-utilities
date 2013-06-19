@@ -208,7 +208,7 @@ sub getTerm
 # We also check for observer roles in *any* section of a course. After checking all sections of a course,
 # we check all current enrollments and see if they match any observer role and if so, remove the observer role
 #
-# Support for manually added students: Students with no sis_batch_id defined are treated almost identically
+# Support for manually added students: Students with no sis_source_id defined are treated almost identically
 # to observers, but are kept in a separate hash. For any 'manual' user who is enrolled in one section and then
 # shows up in the SIS source for a different section, they'll be added to the new section and deleted from the
 # old section. If a 'manual' user is in the same section as the SIS source, the user is deleted from the hash 
@@ -322,7 +322,7 @@ sub generate_enrollments
 				next;
 			}
 			# Was this enrollment a manual one?
-			if ($en->{sis_batch_id} eq "null")
+			if ($en->{sis_source_id} eq "null")
 			{
 				print "Found manual student $users_by_id{$en->{user_id}}->{login_id}\n" if ($debug > 1);
 				$manuals{$users_by_id{$en->{user_id}}->{login_id}} = () if (!defined($manuals{$users_by_id{$en->{user_id}}->{login_id}}));
