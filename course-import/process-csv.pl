@@ -55,6 +55,6 @@ while ($row = $csv->getline($io))
 	$term = "" if ($term < 1000);
 
 	# print "$sis_id,$course,$desc,2,$term,completed\n";
-	$csvout->print ($out,[$sis_id,$course,$desc,2,$term,"completed"]);
+	$csvout->print ($out,[$sis_id,$course,$desc,2,$term,"deleted"]);
 	print "\n";
 }
