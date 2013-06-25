@@ -335,7 +335,7 @@ sub generate_enrollments
 		$enrollments = rest_to_canvas_paginated("/api/v1/sections/$s_id/enrollments");
 		if (!defined($enrollments))
 		{
-			print "Error retrieving enrollments for section \"",$section->{name},"\" in course ID ",$section->{'course_id'},". SKIPPING\n";
+			print STDERR "Error retrieving enrollments for section \"",$section->{name},"\" in course ID ",$section->{'course_id'},". SKIPPING\n";
 			next;
 		}
 
