@@ -537,7 +537,7 @@ sub check_observers
 			    # move the manual enrollment to a section they're about to be auto-enrolled in. This will
 			    # preserve group membership. We can only realisticly do this once though so
 			    # skip the other manual enrollments for this user (if any)
-			    if (defined($sections_for_adds->{$dup}))
+			    if (defined($section_for_adds->{$dup}))
 			    {
 				$res = rest_to_canvas("POST","/sfu/api/v1/enrollment",( enrollment_id => $en->{id}, new_section_id => $section_for_adds->{$dup}) );
 			    	if (!$res)
