@@ -539,7 +539,7 @@ sub check_observers
 			    # skip the other manual enrollments for this user (if any)
 			    if (defined($section_for_adds->{$dup}))
 			    {
-				$res = rest_to_canvas("POST","/sfu/api/v1/enrollment",( enrollment_id => $en->{id}, new_section_id => $section_for_adds->{$dup}) );
+				$res = rest_to_canvas("POST","/sfu/api/v1/enrollment?enrollment_id=". $en->{id} . "&new_section_id=".$section_for_adds->{$dup});
 			    	if (!$res)
 			    	{
 			    		print STDERR "Error modifying enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
