@@ -416,7 +416,7 @@ sub generate_enrollments
 		if (scalar(@new_enrollments) == 0 && !$force && ($type ne "term" || $sect =~ /00$/))
 		{
 			# Only print a warning if Canvas course does have enrollments
-			print STDERR "New Enrollments for ",$section->{name}," is empty! Won't process without \'force\'\n" if (scalar(@current_enrollments) > 0);
+			print STDERR "New Enrollments for $sis_id is empty! Won't process without \'force\'\n" if (scalar(@current_enrollments) > 0);
 			next;
 		}
 
@@ -517,15 +517,17 @@ sub check_observers
 		{
 		    if ($manual)
 		    {
-			foreach $en (@{$observers->{$dup}})
-			{
-			    print "Deleting Manual Student $dup from section ",$en->{section_id},"\n" if ($debug);
-			    $res = rest_to_canvas("DELETE","/api/v1/courses/".$en->{course_id}."/enrollments/".$en->{id}."?task=delete");
-			    if (!$res)
-			    {
-				print STDERR "Error deleting enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
-			    }
-			}
+			# For now, don't delete Manuals as it removes them from groups and
+			# we don't have a reliable way of putting them back in
+			##foreach $en (@{$observers->{$dup}})
+			##{
+			##    print "Deleting Manual Student $dup from section ",$en->{section_id},"\n" if ($debug);
+			##    $res = rest_to_canvas("DELETE","/api/v1/courses/".$en->{course_id}."/enrollments/".$en->{id}."?task=delete");
+			##    if (!$res)
+			##    {
+			##	print STDERR "Error deleting enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
+			##    }
+			##}
 		    }
 		    else
 		    {
