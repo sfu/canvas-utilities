@@ -62,10 +62,16 @@ if ($?)
     system("cat $stderr | mail -s \"Errors from process-enrollments script on $hostname\" $error_email");
 }
 
+# Check to see whether there were any new sections in the output
+if ($sections)
+{
+    $junk = `grep "course_id" $stdout`;
+    $sections = $?;
+}
 
 # See if script produced any enrollment changes. If not, exit quietly
 # Never send info email for non-prod environments
 $junk = `grep "No enrollment changes to process" $stdout`;
-exit 0 if ($? == 0 || !$prod);
+exit 0 if (!$sections && ($? == 0 || !$prod));
 
 system("cat $stdout | mail -s \"Results of process-enrollments script on $hostname\" $info_email");
