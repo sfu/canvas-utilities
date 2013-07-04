@@ -530,7 +530,7 @@ sub check_observers
 			    # (only do this once if there are multiple manual enrollments for this user in this course)
 			    if (!$gotem)
 			    {
-			    	$group_memberships = rest_to_canvas_paginated("/sfu/api/v1/user/groups?sfu_id=".$users_by_username{$dup}->{sis_user_id});
+			    	$group_memberships = rest_to_canvas_paginated("/sfu/api/v1/user/$dup/groups");
 				$gotem++;
 			    	if (defined($group_memberships))
 			    	{
