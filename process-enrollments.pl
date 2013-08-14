@@ -134,7 +134,7 @@ sub fetch_courses_and_sections
 			    foreach $s (@{$course_sections})
 			    {
 				my $sec_id = $s->{sis_section_id};
-				$sec_id = s/:::.*//;
+				next if (!($sec_id =~ s/:::.*//));
 				($t,$d,$c,$sect) = split(/-/,$sec_id);
 				push(@canvas_sections,lc($sect));
 			    }
