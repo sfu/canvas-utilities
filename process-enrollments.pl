@@ -117,6 +117,7 @@ sub fetch_courses_and_sections
 		foreach $course (@{$courses})
 		{
 			$c_id = $course->{id};
+			$s_id = $course->{sis_course_id};
 			$courses_by_id{$c_id} = $course;
 			$course_sections = rest_to_canvas_paginated("/api/v1/courses/$c_id/sections");
 			if (!defined($course_sections))
@@ -125,6 +126,32 @@ sub fetch_courses_and_sections
 				return undef;
 			}
 			push @sections,@{$course_sections};
+			if ($s_id ne "null")
+			{
+			    # We can determine Amaint tutorial sections, so save what Canvas has
+
+			    my (@canvas_sections, @amaint_sections);
+			    foreach $s (@{$course_sections})
+			    {
+				my $sec_id = $s->{sis_section_id};
+				$sec_id = s/:::.*//;
+				($t,$d,$c,$sect) = split(/-/,$sec_id);
+				push(@canvas_sections,$sect);
+			    }
+	
+			    # and fetch what Amaint has..
+			    $temp = rest_to_canvas("GET","/sfu/api/v1/amaint/course/$s_id/sectionTutorials");
+			    next if (!defined($temp));
+			    push(@amaint_sections,split(/, /,$temp->{sectionTutorials}));
+
+			    # then compare them and generate any new sections
+			    ($adds,$drops) = compare_arrays(\@amaint_sections,\@canvas_sections);
+			    if (scalar(@{$adds}) || scalar(@{$drops}))
+			    {
+				print "Sections to add for $s_id: ", join(",",@{$adds}),"\n";
+				print "Sections to drop(??) for $s_id: ", join(",",@{$drops}),"\n";
+			    }
+			}
 		}
 	}
 
