@@ -222,7 +222,7 @@ sub generate_enrollments
 
 	foreach $section (@{$sections})
 	{
-		my ($maillist);
+		my ($maillist,$term,$dept,$course,$sect);
 
 		$sis_id = $section->{'sis_section_id'};
 		$c_id = $section->{'course_id'};
@@ -368,7 +368,8 @@ sub generate_enrollments
 		    }
 		}
 
-		if (scalar(@new_enrollments) == 0 && !$force)
+		# Regex means that tutorial/lab sections that drop to 0 enrollment WILL be automatically processed
+		if (scalar(@new_enrollments) == 0 && !$force && ($type ne "term" || $sect =~ /00$/))
 		{
 			# Only print a warning if Canvas course does have enrollments
 			print STDERR "New Enrollments for ",$section->{name}," is empty! Won't process without \'force\'\n" if (scalar(@current_enrollments) > 0);
