@@ -27,7 +27,6 @@ $import_timeout = 900;
 # Set debug to '3' to do no processing. Set to '2' to process users but not enrollments. Set to 1 for normal processing with extra output
 $debug = 1;
 
-$Canvas::debug = ($debug > 2) ? 1 : 0;
 
 #--- end config ----
 
@@ -56,6 +55,7 @@ $users_csv = "user_id,login_id,password,first_name,last_name,email,status\n";
 		exit 1;
 	}
 	$debug = $opt_d if (defined($opt_d));
+	$Canvas::debug = ($debug > 2) ? 1 : 0;
 	getService();
 	getTerm();
 	fetch_courses_and_sections($opt_c) or error_exit("Couldn't fetch courses and sections from Canvas!");
@@ -126,7 +126,7 @@ sub fetch_courses_and_sections
 				return undef;
 			}
 			push @sections,@{$course_sections};
-			if ($s_id ne "null")
+			if ($s_id =~ /^\d\d\d\d/)
 			{
 			    # We can determine Amaint tutorial sections, so save what Canvas has
 
@@ -136,13 +136,13 @@ sub fetch_courses_and_sections
 				my $sec_id = $s->{sis_section_id};
 				$sec_id = s/:::.*//;
 				($t,$d,$c,$sect) = split(/-/,$sec_id);
-				push(@canvas_sections,$sect);
+				push(@canvas_sections,lc($sect));
 			    }
 	
 			    # and fetch what Amaint has..
 			    $temp = rest_to_canvas("GET","/sfu/api/v1/amaint/course/$s_id/sectionTutorials");
 			    next if (!defined($temp));
-			    push(@amaint_sections,split(/, /,$temp->{sectionTutorials}));
+			    push(@amaint_sections,split(/, /,lc($temp->{sectionTutorials})));
 
 			    # then compare them and generate any new sections
 			    ($adds,$drops) = compare_arrays(\@amaint_sections,\@canvas_sections);
