@@ -142,8 +142,11 @@ sub fetch_courses_and_sections
 			    # and fetch what Amaint has..
 			    $temp = rest_to_canvas("GET","/sfu/api/v1/amaint/course/$s_id/sectionTutorials");
 			    next if (!defined($temp));
-			    push(@amaint_sections,@{$temp->{sectionTutorials}});
-			    foreach (@amaint_sections) { lc($_); }
+			    foreach (@{$temp->{sectionTutorials}})
+			    {
+				lc($_);
+			    	push(@amaint_sections,$_);
+			    }
 
 			    # then compare them and generate any new sections
 			    ($adds,$drops) = compare_arrays(\@amaint_sections,\@canvas_sections);
