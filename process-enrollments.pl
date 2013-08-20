@@ -42,10 +42,11 @@ my ($currentTerm,$previousTerm);
 # Global counters
 my ($total_enrollments,%total_users,$total_sections);
 
-getopts('chd:f:');
+getopts('cshd:f:');
 
 push @enrollments_csv,"course_id,user_id,role,section_id,status,associated_user_id";
 $users_csv = "user_id,login_id,password,first_name,last_name,email,status\n";
+push @sections_csv,"section_id,course_id,name,status";
 
 # Main block
 {
@@ -83,6 +84,7 @@ Usage:
 					  3 == submit no changes. Dump all HTTP traffic to Canvas
    -f sis_section_id[,sis_section_id]: 	process only the specified Canvas section(s). 
 					this will also empty the enrolment if the data source indicates there are no enrolments
+	   -s				Look for missing sections and generate a CSV to add them. Emails the CSV to Canvas Support staff
 	   -h:				This message
 EOM
 }
@@ -126,7 +128,7 @@ sub fetch_courses_and_sections
 				return undef;
 			}
 			push @sections,@{$course_sections};
-			if ($s_id =~ /^\d\d\d\d/)
+			if ($s_id =~ /^\d\d\d\d/ && defined($opt_s))
 			{
 			    # We can determine Amaint tutorial sections, so save what Canvas has
 
@@ -151,7 +153,13 @@ sub fetch_courses_and_sections
 			    if (scalar(@{$adds}) )
 			    {
 				print "Sections to add for $s_id: ", join(",",@{$adds}),"\n";
-				# In here we'd generate a CSV file
+				($term,$dept,$course,$junk) = split(/-/,$s_id);
+				foreach $sec (@{$adds})
+				{
+				    $sec_id = "$term-$dept-$course-$sec:::section";
+				    push @sections_csv,"$sec_id,$s_id,".uc($sec).",active";
+				}
+				print "\n\n",join("\n",@sections_csv,"","");
 			    }
 			}
 		}
