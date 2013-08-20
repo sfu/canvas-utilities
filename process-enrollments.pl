@@ -27,7 +27,6 @@ $import_timeout = 900;
 # Set debug to '3' to do no processing. Set to '2' to process users but not enrollments. Set to 1 for normal processing with extra output
 $debug = 1;
 
-$Canvas::debug = ($debug > 2) ? 1 : 0;
 
 #--- end config ----
 
@@ -43,10 +42,11 @@ my ($currentTerm,$previousTerm);
 # Global counters
 my ($total_enrollments,%total_users,$total_sections);
 
-getopts('chd:f:');
+getopts('cshd:f:');
 
 push @enrollments_csv,"course_id,user_id,role,section_id,status,associated_user_id";
 $users_csv = "user_id,login_id,password,first_name,last_name,email,status\n";
+push @sections_csv,"section_id,course_id,name,status";
 
 # Main block
 {
@@ -56,6 +56,7 @@ $users_csv = "user_id,login_id,password,first_name,last_name,email,status\n";
 		exit 1;
 	}
 	$debug = $opt_d if (defined($opt_d));
+	$Canvas::debug = ($debug > 2) ? 1 : 0;
 	getService();
 	getTerm();
 	fetch_courses_and_sections($opt_c) or error_exit("Couldn't fetch courses and sections from Canvas!");
@@ -83,6 +84,7 @@ Usage:
 					  3 == submit no changes. Dump all HTTP traffic to Canvas
    -f sis_section_id[,sis_section_id]: 	process only the specified Canvas section(s). 
 					this will also empty the enrolment if the data source indicates there are no enrolments
+	   -s				Look for missing sections and generate a CSV to add them. Emails the CSV to Canvas Support staff
 	   -h:				This message
 EOM
 }
@@ -117,6 +119,7 @@ sub fetch_courses_and_sections
 		foreach $course (@{$courses})
 		{
 			$c_id = $course->{id};
+			$s_id = $course->{sis_course_id};
 			$courses_by_id{$c_id} = $course;
 			$course_sections = rest_to_canvas_paginated("/api/v1/courses/$c_id/sections");
 			if (!defined($course_sections))
@@ -125,6 +128,43 @@ sub fetch_courses_and_sections
 				return undef;
 			}
 			push @sections,@{$course_sections};
+			if ($s_id =~ /^\d\d\d\d/ && defined($opt_s))
+			{
+			    # We can determine Amaint tutorial sections, so save what Canvas has
+
+			    my (@canvas_sections, @amaint_sections);
+			    foreach $s (@{$course_sections})
+			    {
+				my $sec_id = $s->{sis_section_id};
+				next if (!($sec_id =~ s/:::.*//));
+				($t,$d,$c,$sect) = split(/-/,$sec_id);
+				push(@canvas_sections,lc($sect));
+			    }
+	
+			    # and fetch what Amaint has..
+			    $temp = rest_to_canvas("GET","/sfu/api/v1/amaint/course/$s_id/sectionTutorials");
+			    next if (!defined($temp));
+
+			    # lowercase it..
+			    push(@amaint_sections, map lc, @{$temp->{sectionTutorials}});
+
+			    # then compare them and generate any new sections
+			    ($adds,$drops) = compare_arrays(\@amaint_sections,\@canvas_sections);
+			    if (scalar(@{$adds}) )
+			    {
+				print "Sections to add for $s_id: ", join(",",@{$adds}),"\n" if ($debug);
+				($term,$dept,$course,$junk) = split(/-/,$s_id);
+				foreach $sec (@{$adds})
+				{
+				    $sec_id = "$term-$dept-$course-$sec".":::section";
+				    push @sections_csv,"$sec_id,$s_id,".uc($sec).",active";
+				}
+			    }
+			}
+		}
+		if (defined($opt_s) && scalar(@sections_csv) > 1)
+		{
+			print "\n\n",join("\n",@sections_csv,"","");
 		}
 	}
 
