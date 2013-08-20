@@ -152,7 +152,7 @@ sub fetch_courses_and_sections
 			    ($adds,$drops) = compare_arrays(\@amaint_sections,\@canvas_sections);
 			    if (scalar(@{$adds}) )
 			    {
-				print "Sections to add for $s_id: ", join(",",@{$adds}),"\n";
+				print "Sections to add for $s_id: ", join(",",@{$adds}),"\n" if ($debug);
 				($term,$dept,$course,$junk) = split(/-/,$s_id);
 				foreach $sec (@{$adds})
 				{
