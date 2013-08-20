@@ -270,7 +270,7 @@ sub generate_enrollments
 			($term,$dept,$course,$sect) = split(/-/,$sis_id);
 
 			# Do some basic sanity checks on the sis_section_id
-			if ($term !~ /^\d+$/ || $dept !~ /^[a-zA-Z0-9]+$/ || $course !~ /^X*\d+\w?$/ || $sect !~ /^[a-zA-Z0-9]+$/) 
+			if ($term !~ /^\d+$/ || $dept !~ /^[a-zA-Z0-9]+$/ || $course !~ /^[xX]*\d+\w?$/ || $sect !~ /^[a-zA-Z0-9]+$/) 
 			{
 				push @skipmsgs,"Malformed sis_section_id \"$sis_id\" for section ".$section->{name}." in course ID $c_id. SKIPPING\n";
 				next;
