@@ -156,12 +156,15 @@ sub fetch_courses_and_sections
 				($term,$dept,$course,$junk) = split(/-/,$s_id);
 				foreach $sec (@{$adds})
 				{
-				    $sec_id = "$term-$dept-$course-$sec:::section";
+				    $sec_id = "$term-$dept-$course-$sec".":::section";
 				    push @sections_csv,"$sec_id,$s_id,".uc($sec).",active";
 				}
-				print "\n\n",join("\n",@sections_csv,"","");
 			    }
 			}
+		}
+		if (defined($opt_s) && scalar(@sections_csv) > 1)
+		{
+			print "\n\n",join("\n",@sections_csv,"","");
 		}
 	}
 
