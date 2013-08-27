@@ -362,7 +362,8 @@ sub generate_enrollments
 				next;
 			}
 			# Was this enrollment a manual one?
-			if ($en->{sis_source_id} eq "null")
+                        if (exists($en->{sis_source_id}) && ($en->{sis_source_id} eq ""))
+
 			{
 				print "Found manual student $users_by_id{$en->{user_id}}->{login_id}\n" if ($debug > 1);
 				$manuals{$users_by_id{$en->{user_id}}->{login_id}} = () if (!defined($manuals{$users_by_id{$en->{user_id}}->{login_id}}));
