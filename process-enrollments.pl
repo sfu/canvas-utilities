@@ -154,10 +154,11 @@ sub fetch_courses_and_sections
 			    {
 				print "Sections to add for $s_id: ", join(",",@{$adds}),"\n" if ($debug);
 				($term,$dept,$course,$junk) = split(/-/,$s_id);
+				$time = time();
 				foreach $sec (@{$adds})
 				{
-				    $sec_id = "$term-$dept-$course-$sec".":::section";
-				    push @sections_csv,"$sec_id,$s_id,".uc($sec).",active";
+				    $sec_id = "$term-$dept-$course-$sec".":::$time";
+				    push @sections_csv,"$sec_id,$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",active";
 				}
 			    }
 			}
