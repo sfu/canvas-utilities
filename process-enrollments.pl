@@ -128,9 +128,11 @@ sub fetch_courses_and_sections
 				return undef;
 			}
 			push @sections,@{$course_sections};
-			if ($s_id =~ /^\d\d\d\d/ && defined($opt_s))
+
+			# If -s flag was given, and this course is an SIS course, and it's not cross-listed..
+			if (defined($opt_s) && $s_id =~ /^\d\d\d\d/ && $s_id !~ /[^:]:[^:]/)
 			{
-			    # We can determine Amaint tutorial sections, so save what Canvas has
+			    # Then we can determine Amaint tutorial sections, so save what Canvas has
 
 			    my (@canvas_sections, @amaint_sections);
 			    foreach $s (@{$course_sections})
