@@ -51,11 +51,11 @@ $opts .= "-s " if ($sections);
 $opts .= "-c " if ($completed);
 
 # Run it!
-print("$cmd $opts > $stdout 2> $stderr");
-#system("$cmd $opts > $stdout 2> $stderr");
+#print("$cmd $opts > $stdout 2> $stderr");
+system("$cmd $opts > $stdout 2> $stderr");
 
 # See if STDERR changed between runs
-$junk = `diff $stderr.old $stderr > /devnull 2>&1`;
+$junk = `diff $stderr.old $stderr > /dev/null 2>&1`;
 if ($?)
 {
     # Files are different, we have new errors
