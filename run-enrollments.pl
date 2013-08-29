@@ -33,6 +33,9 @@ $prod = 1 if ($hostname =~ /canvas-mp/);
 # Exit unless we're running on Prod or it's 4am (stage and test run at 4am only)
 exit 0 unless ($hour == 4 || $prod);
 
+# On Sundays, process ALL courses not just non-completed ones
+$completed = 1 if ($wday == 0);
+
 # We only email the Canvas queue if the stderr output changes between runs
 if (-e $stderr)
 {
@@ -44,7 +47,8 @@ else
 }
 
 $opts = "-d $debug ";
-$opts .= "-s" if ($sections);
+$opts .= "-s " if ($sections);
+$opts .= "-c " if ($completed);
 
 # Run it!
 print("$cmd $opts > $stdout 2> $stderr");
