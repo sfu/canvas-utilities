@@ -278,7 +278,7 @@ sub generate_enrollments
 			# Starting a new course. See if there were any observers in the last course
 			$old_c_id = $c_id;
 			check_observers(\%observers,\@all_enrollments);
-			check_observers(\%manuals,\@all_enrollments,1);
+			check_observers(\%manuals,\@all_enrollments,1,\%section_for_adds);
 			%observers = ();
 			%manuals = ();
 			%section_for_adds = ();
@@ -384,6 +384,9 @@ sub generate_enrollments
 			push (@current_enrollments, $users_by_id{$en->{user_id}}->{login_id}) if ($en->{type} eq "StudentEnrollment");
 		}
 		print "Users in section: \n",join(",",sort @current_enrollments),"\n" if $debug;
+
+		# If we're just checking this section for manual enrollments, we're done. Move onto the next section
+		next if ($check_for_manuals);
 
 		# Grab new enrollments from source
 
