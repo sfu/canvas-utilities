@@ -120,6 +120,10 @@ sub fetch_courses_and_sections
 		{
 			$c_id = $course->{id};
 			$s_id = $course->{sis_course_id};
+
+			# Only process courses that have a defined sis_id that's not 'sandbox'
+			next if ($s_id eq "" || $s_id =~ /sandbox/);
+
 			$courses_by_id{$c_id} = $course;
 			$course_sections = rest_to_canvas_paginated("/api/v1/courses/$c_id/sections");
 			if (!defined($course_sections))
@@ -277,19 +281,16 @@ sub generate_enrollments
 			check_observers(\%manuals,\@all_enrollments,1);
 			%observers = ();
 			%manuals = ();
+			%section_for_adds = ();
 			@all_enrollments = ();
 		}
 
 		$force = 0;
 		$force = 1 if (defined($opt_f));
 
-		if ($sis_id eq "null" || $sis_id eq "")
-		{
-			push @skipmsgs,"Skipped section \"".$section->{name}."\" in course ID $c_id. No sis_section_id set\n";
-			next;
-		}
+		$check_for_manuals = ($sis_id eq "null" || $sis_id eq "") ? 1 : 0;
 
-		if ($sis_id !~ /:::/)
+		if (!$check_for_manuals && $sis_id !~ /:::/)
 		{
 			push @skipmsgs,"Skipped section \"".$section->{name}."\" with sis_section_id $sis_id in course ID $c_id. Missing ':::' delimiter\n";
 			next;
@@ -307,7 +308,7 @@ sub generate_enrollments
 			# Special cases -- 'type:source' is supported
 			($type,$type_source) = split(/:/,$sis_id,2);
 		}
-		else
+		elsif (!$check_for_manuals)
 		{
 			$type = "term";
 			($term,$dept,$course,$sect) = split(/-/,$sis_id);
@@ -368,17 +369,19 @@ sub generate_enrollments
                         if (exists($en->{sis_source_id}) && ($en->{sis_source_id} eq ""))
 
 			{
+				# %manual is a hash whose values are arrays of enrollments for a given course
 				print "Found manual student $users_by_id{$en->{user_id}}->{login_id}\n" if ($debug > 1);
 				$manuals{$users_by_id{$en->{user_id}}->{login_id}} = () if (!defined($manuals{$users_by_id{$en->{user_id}}->{login_id}}));
 				push(@{$manuals{$users_by_id{$en->{user_id}}->{login_id}}}, $en);
 				next;
 			}
 
-			# next if ($en->{type} ne "StudentEnrollment");
-			# Everyone, even teachers/designers, goes into the list of current enrollments
-			push (@current_enrollments, $users_by_id{$en->{user_id}}->{login_id}) if ($en->{type} eq "StudentEnrollment");
 			# Track the teachers/designers separately as well
 			$teachers{$users_by_id{$en->{user_id}}->{login_id}}++ if ($en->{type} ne "StudentEnrollment");
+
+			next if ($check_for_manuals);
+
+			push (@current_enrollments, $users_by_id{$en->{user_id}}->{login_id}) if ($en->{type} eq "StudentEnrollment");
 		}
 		print "Users in section: \n",join(",",sort @current_enrollments),"\n" if $debug;
 
@@ -457,9 +460,18 @@ sub generate_enrollments
 		print "Processing ",scalar(@{$adds})," Adds and ",scalar(@{$drops})," Drops for section ",$section->{name},"\n";
 		drop_enrollments($drops,$section,\%teachers);
 		add_enrollments($adds,$section,\%teachers);
+
+		# Keep track of the section we add each user to, in case
+		# the user was also a manual enrollment. It doesn't matter
+		# if the user is added to more than one section - we just need
+		# to save one
+		foreach $add (@{$adds})
+		{
+			$section_for_adds{$add} = $section->{id};
+		}
 	}
 	check_observers(\%observers,\@all_enrollments);
-	check_observers(\%manuals,\@all_enrollments,1);
+	check_observers(\%manuals,\@all_enrollments,1,\%section_for_adds);
 }
 
 
@@ -502,7 +514,7 @@ sub add_new_users
 
 sub check_observers
 {
-	my ($observers,$all_enrollments,$manual) = @_;
+	my ($observers,$all_enrollments,$manual,$section_for_adds) = @_;
 	if (scalar(keys %{$observers}))
 	{
 	    print "Processing observer/manuals\n" if ($debug > 1);
@@ -519,12 +531,25 @@ sub check_observers
 		    {
 			foreach $en (@{$observers->{$dup}})
 			{
-			    print "Deleting Manual Student $dup from section ",$en->{section_id},"\n" if ($debug);
-			    $res = rest_to_canvas("DELETE","/api/v1/courses/".$en->{course_id}."/enrollments/".$en->{id}."?task=delete");
-			    if (!$res)
+			    # move the manual enrollment to a section they're about to be auto-enrolled in. This will
+			    # preserve group membership. We can only realisticly do this once though so
+			    # skip the other manual enrollments for this user (if any)
+			    if (defined($sections_for_adds->{$dup}))
 			    {
-				print STDERR "Error deleting enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
+				$res = rest_to_canvas("POST","/sfu/api/v1/enrollment",( enrollment_id => $en->{id}, new_section_id => $section_for_adds->{$dup}) );
+			    	if (!$res)
+			    	{
+			    		print STDERR "Error modifying enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
+			    	}
+				last;
 			    }
+	
+			    #print "Deleting Manual Student $dup from section ",$en->{section_id},"\n" if ($debug);
+			    #$res = rest_to_canvas("DELETE","/api/v1/courses/".$en->{course_id}."/enrollments/".$en->{id}."?task=delete");
+			    #if (!$res)
+			    #{
+			    #	print STDERR "Error deleting enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
+			    #}
 			}
 		    }
 		    else
