@@ -66,7 +66,7 @@ if ($?)
 if ($sections)
 {
     $junk = `grep "course_id" $stdout`;
-    $sections = $?;
+    $sections = ! $?;
 }
 
 # See if script produced any enrollment changes. If not, exit quietly
