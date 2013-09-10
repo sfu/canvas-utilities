@@ -278,10 +278,9 @@ sub generate_enrollments
 			# Starting a new course. See if there were any observers in the last course
 			$old_c_id = $c_id;
 			check_observers(\%observers,\@all_enrollments);
-			check_observers(\%manuals,\@all_enrollments,1,\%section_for_adds);
+			check_observers(\%manuals,\@all_enrollments,1);
 			%observers = ();
 			%manuals = ();
-			%section_for_adds = ();
 			@all_enrollments = ();
 		}
 
@@ -464,17 +463,9 @@ sub generate_enrollments
 		drop_enrollments($drops,$section,\%teachers);
 		add_enrollments($adds,$section,\%teachers);
 
-		# Keep track of the section we add each user to, in case
-		# the user was also a manual enrollment. It doesn't matter
-		# if the user is added to more than one section - we just need
-		# to save one
-		foreach $add (@{$adds})
-		{
-			$section_for_adds{$add} = $section->{id};
-		}
 	}
 	check_observers(\%observers,\@all_enrollments);
-	check_observers(\%manuals,\@all_enrollments,1,\%section_for_adds);
+	check_observers(\%manuals,\@all_enrollments,1);
 }
 
 
@@ -517,7 +508,7 @@ sub add_new_users
 
 sub check_observers
 {
-	my ($observers,$all_enrollments,$manual,$section_for_adds) = @_;
+	my ($observers,$all_enrollments,$manual) = @_;
 	if (scalar(keys %{$observers}))
 	{
 	    print "Processing observer/manuals\n" if ($debug > 1);
@@ -532,27 +523,40 @@ sub check_observers
 		{
 		    if ($manual)
 		    {
+		   	@groups = (); $gotem=0;
 			foreach $en (@{$observers->{$dup}})
 			{
-			    # move the manual enrollment to a section they're about to be auto-enrolled in. This will
-			    # preserve group membership. We can only realisticly do this once though so
-			    # skip the other manual enrollments for this user (if any)
-			    if (defined($sections_for_adds->{$dup}))
+			    # First, retrieve the list of group memberships for this user
+			    # (only do this once if there are multiple manual enrollments for this user in this course)
+			    if (!$gotem)
 			    {
-				$res = rest_to_canvas("POST","/sfu/api/v1/enrollment",( enrollment_id => $en->{id}, new_section_id => $section_for_adds->{$dup}) );
-			    	if (!$res)
+			    	$group_memberships = rest_to_canvas_paginated("/sfu/api/v1/user/groups?sfu_id=".$users_by_username{$dup}->{sis_user_id});
+				$gotem++;
+			    	if (defined($group_memberships))
 			    	{
-			    		print STDERR "Error modifying enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
+				    # Save the group memberships that match the current course
+				    foreach $grp (@{$group_memberships})
+				    {
+				        push @groups,$grp->{id} if (lc($grp->{context_type}) eq "course" && $grp->{context_id} == $en->{course_id});
+				    }
 			    	}
-				last;
 			    }
 	
-			    #print "Deleting Manual Student $dup from section ",$en->{section_id},"\n" if ($debug);
-			    #$res = rest_to_canvas("DELETE","/api/v1/courses/".$en->{course_id}."/enrollments/".$en->{id}."?task=delete");
-			    #if (!$res)
-			    #{
-			    #	print STDERR "Error deleting enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
-			    #}
+			    # Now process the unenrollment of the manually added user
+			    print "Deleting Manual Student $dup from section ",$en->{section_id},"\n" if ($debug);
+			    $res = rest_to_canvas("DELETE","/api/v1/courses/".$en->{course_id}."/enrollments/".$en->{id}."?task=delete");
+			    if (!$res)
+			    {
+			    	print STDERR "Error deleting enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
+			    }
+
+			}
+			# Deleting the manual enrollment(s) removes the user from their course-related groups, so flip those
+			# group membership states from 'deleted' back to 'active'
+			foreach $grp (@groups)
+			{
+			    $res = rest_to_canvas("PUT","/sfu/api/v1/group_memberships/$grp/undelete");
+			    print STDERR "Couldn't undelete group membership $grp for user $dup\n" if (!defined($res));
 			}
 		    }
 		    else
