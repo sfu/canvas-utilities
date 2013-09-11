@@ -537,7 +537,7 @@ sub check_observers
 				    # Save the group memberships that match the current course
 				    foreach $grp (@{$group_memberships})
 				    {
-				        push @groups,$grp->{id} if (lc($grp->{context_type}) eq "course" && $grp->{context_id} == $en->{course_id});
+				        push @groups,$grp->{group_membership_id} if (lc($grp->{context_type}) eq "course" && $grp->{context_id} == $en->{course_id});
 				    }
 			    	}
 			    }
