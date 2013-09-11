@@ -120,6 +120,10 @@ sub fetch_courses_and_sections
 		{
 			$c_id = $course->{id};
 			$s_id = $course->{sis_course_id};
+
+			# Only process courses that have a defined sis_id that's not 'sandbox'
+			next if ($s_id eq "" || $s_id =~ /sandbox/);
+
 			$courses_by_id{$c_id} = $course;
 			$course_sections = rest_to_canvas_paginated("/api/v1/courses/$c_id/sections");
 			if (!defined($course_sections))
@@ -283,13 +287,9 @@ sub generate_enrollments
 		$force = 0;
 		$force = 1 if (defined($opt_f));
 
-		if ($sis_id eq "null" || $sis_id eq "")
-		{
-			push @skipmsgs,"Skipped section \"".$section->{name}."\" in course ID $c_id. No sis_section_id set\n";
-			next;
-		}
+		$check_for_manuals = ($sis_id eq "null" || $sis_id eq "") ? 1 : 0;
 
-		if ($sis_id !~ /:::/)
+		if (!$check_for_manuals && $sis_id !~ /:::/)
 		{
 			push @skipmsgs,"Skipped section \"".$section->{name}."\" with sis_section_id $sis_id in course ID $c_id. Missing ':::' delimiter\n";
 			next;
@@ -307,7 +307,7 @@ sub generate_enrollments
 			# Special cases -- 'type:source' is supported
 			($type,$type_source) = split(/:/,$sis_id,2);
 		}
-		else
+		elsif (!$check_for_manuals)
 		{
 			$type = "term";
 			($term,$dept,$course,$sect) = split(/-/,$sis_id);
@@ -368,19 +368,24 @@ sub generate_enrollments
                         if (exists($en->{sis_source_id}) && ($en->{sis_source_id} eq ""))
 
 			{
+				# %manual is a hash whose values are arrays of enrollments for a given course
 				print "Found manual student $users_by_id{$en->{user_id}}->{login_id}\n" if ($debug > 1);
 				$manuals{$users_by_id{$en->{user_id}}->{login_id}} = () if (!defined($manuals{$users_by_id{$en->{user_id}}->{login_id}}));
 				push(@{$manuals{$users_by_id{$en->{user_id}}->{login_id}}}, $en);
 				next;
 			}
 
-			# next if ($en->{type} ne "StudentEnrollment");
-			# Everyone, even teachers/designers, goes into the list of current enrollments
-			push (@current_enrollments, $users_by_id{$en->{user_id}}->{login_id}) if ($en->{type} eq "StudentEnrollment");
 			# Track the teachers/designers separately as well
 			$teachers{$users_by_id{$en->{user_id}}->{login_id}}++ if ($en->{type} ne "StudentEnrollment");
+
+			next if ($check_for_manuals);
+
+			push (@current_enrollments, $users_by_id{$en->{user_id}}->{login_id}) if ($en->{type} eq "StudentEnrollment");
 		}
 		print "Users in section: \n",join(",",sort @current_enrollments),"\n" if $debug;
+
+		# If we're just checking this section for manual enrollments, we're done. Move onto the next section
+		next if ($check_for_manuals);
 
 		# Grab new enrollments from source
 
@@ -457,6 +462,7 @@ sub generate_enrollments
 		print "Processing ",scalar(@{$adds})," Adds and ",scalar(@{$drops})," Drops for section ",$section->{name},"\n";
 		drop_enrollments($drops,$section,\%teachers);
 		add_enrollments($adds,$section,\%teachers);
+
 	}
 	check_observers(\%observers,\@all_enrollments);
 	check_observers(\%manuals,\@all_enrollments,1);
@@ -517,17 +523,41 @@ sub check_observers
 		{
 		    if ($manual)
 		    {
-			# For now, don't delete Manuals as it removes them from groups and
-			# we don't have a reliable way of putting them back in
-			##foreach $en (@{$observers->{$dup}})
-			##{
-			##    print "Deleting Manual Student $dup from section ",$en->{section_id},"\n" if ($debug);
-			##    $res = rest_to_canvas("DELETE","/api/v1/courses/".$en->{course_id}."/enrollments/".$en->{id}."?task=delete");
-			##    if (!$res)
-			##    {
-			##	print STDERR "Error deleting enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
-			##    }
-			##}
+		   	@groups = (); $gotem=0;
+			foreach $en (@{$observers->{$dup}})
+			{
+			    # First, retrieve the list of group memberships for this user
+			    # (only do this once if there are multiple manual enrollments for this user in this course)
+			    if (!$gotem)
+			    {
+			    	$group_memberships = rest_to_canvas_paginated("/sfu/api/v1/user/$dup/groups");
+				$gotem++;
+			    	if (defined($group_memberships))
+			    	{
+				    # Save the group memberships that match the current course
+				    foreach $grp (@{$group_memberships})
+				    {
+				        push @groups,$grp->{group_membership_id} if (lc($grp->{context_type}) eq "course" && $grp->{context_id} == $en->{course_id});
+				    }
+			    	}
+			    }
+	
+			    # Now process the unenrollment of the manually added user
+			    print "Deleting Manual Student $dup from section ",$en->{section_id},"\n" if ($debug);
+			    $res = rest_to_canvas("DELETE","/api/v1/courses/".$en->{course_id}."/enrollments/".$en->{id}."?task=delete");
+			    if (!$res)
+			    {
+			    	print STDERR "Error deleting enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
+			    }
+
+			}
+			# Deleting the manual enrollment(s) removes the user from their course-related groups, so flip those
+			# group membership states from 'deleted' back to 'active'
+			foreach $grp (@groups)
+			{
+			    $res = rest_to_canvas("PUT","/sfu/api/v1/group_memberships/$grp/undelete");
+			    print STDERR "Couldn't undelete group membership $grp for user $dup\n" if (!defined($res));
+			}
 		    }
 		    else
 		    {
