@@ -89,6 +89,15 @@ Usage:
 EOM
 }
 
+# Fetch all courses and sections from Canvas unless the -f flag was
+# specified, in which case just fetch the specified sections.
+# For 'all sections', fetch all courses in $account_id (the one for SFU)
+# then fetch all sections in each course
+#
+# If the -s flag was passed in, use this as an opportunity to check
+# for missing setions. Fetch all sections for each course from Amaint
+# (via an SFU API in Canvas) and compare
+
 sub fetch_courses_and_sections
 {
     	my (@sections);
@@ -182,6 +191,12 @@ sub fetch_courses_and_sections
 	return 1;
 }
 
+# Fetch all users from Canvas. In theory, all users should be in Canvas
+# so we could fetch them from Amaint (which might be faster), but there's 
+# always a chance a user didn't get added via the real-time JMS sync,
+# so we fetch them from Canvas. If any are found to be missing during
+# the enrollment process, they're added at that point
+
 sub fetch_users
 {
 	$users = rest_to_canvas_paginated("/api/v1/accounts/$account_id/users");
@@ -256,11 +271,11 @@ sub getTerm
 # we check all current enrollments and see if they match any observer role and if so, remove the observer role
 #
 # Support for manually added students: Students with no sis_source_id defined are treated almost identically
-# to observers, but are kept in a separate hash. For any 'manual' user who is enrolled in one section and then
-# shows up in the SIS source for a different section, they'll be added to the new section and deleted from the
-# old section. If a 'manual' user is in the same section as the SIS source, the user is deleted from the hash 
-# so that they're not deleted from the section right after being added. We're counting on Canvas doing the
-# "right thing" and converting an enrollment from 'manual' to 'sis'. If it doesn't, we'll have to code around that
+# to observers, but are kept in a separate hash. For any 'manual' user who is enrolled in any section of a given
+# course and then shows up in the SIS source, they'll be deleted from the sections they were enrolled in manually,
+# then added to the section(s) via CSV. Since deleting a manual enrollment deletes the user from their groups,
+# we retrieve their group memberships before deleting them, then reactivate those memberships after the delete is
+# done. This is all handled by the 'check_observers' function each time we get to the end of the sections for a course
 
 sub generate_enrollments
 {
@@ -275,7 +290,7 @@ sub generate_enrollments
 		$c_id = $section->{'course_id'};
 		if ($c_id != $old_c_id)
 		{
-			# Starting a new course. See if there were any observers in the last course
+			# Starting a new course. See if there were any observers or manuals in the last course
 			$old_c_id = $c_id;
 			check_observers(\%observers,\@all_enrollments);
 			check_observers(\%manuals,\@all_enrollments,1);
@@ -287,6 +302,8 @@ sub generate_enrollments
 		$force = 0;
 		$force = 1 if (defined($opt_f));
 
+		# We have to look in the default section for manual enrollments, but
+		# that's all we do with the default section
 		$check_for_manuals = ($sis_id eq "null" || $sis_id eq "") ? 1 : 0;
 
 		if (!$check_for_manuals && $sis_id !~ /:::/)

@@ -28,7 +28,9 @@ $debug = 1 if ($hour == 4);
 $sections = 1 if ($hour == 6);
 
 # Only run under prod conditions if host is canvas-mp
-$prod = 1 if ($hostname =~ /canvas-mp/);
+$prod = 1 if ($hostname =~ /canvas-mp(\d*)/);
+# Exit if we're not running on the first canvas-m node
+exit 0 if ($1 > 1);
 
 # Exit unless we're running on Prod or it's 4am (stage and test run at 4am only)
 exit 0 unless ($hour == 4 || $prod);
