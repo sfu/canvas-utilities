@@ -276,10 +276,16 @@ sub getTerm
 # then added to the section(s) via CSV. Since deleting a manual enrollment deletes the user from their groups,
 # we retrieve their group memberships before deleting them, then reactivate those memberships after the delete is
 # done. This is all handled by the 'check_observers' function each time we get to the end of the sections for a course
+#
+# Teacher/designer/TA enrollments are checked by accumulating them as each section of a course is scanned. If
+# a user shows up in the SIS source who is already in the teachers list, they won't be added as a student. But
+# if they show up in the SIS source for a section that's processed before the section they're enrolled as a teacher
+# in, then they'll get added. This shouldn't be a problem though as teachers are supposed to be enrolled in the
+# default section going forward (which is always the first one fetched for a course)
 
 sub generate_enrollments
 {
-	my ($c_id,$old_c_id,@all_enrollments,%observers,%manuals);
+	my ($c_id,$old_c_id,@all_enrollments,%observers,%manuals,%teachers);
 	my $force = 0;
 
 	foreach $section (@{$sections})
@@ -296,13 +302,14 @@ sub generate_enrollments
 			check_observers(\%manuals,\@all_enrollments,1);
 			%observers = ();
 			%manuals = ();
+			%teachers = ();
 			@all_enrollments = ();
 		}
 
 		$force = 0;
 		$force = 1 if (defined($opt_f));
 
-		# We have to look in the default section for manual enrollments, but
+		# We have to look in the default section for manual enrollments and teachers, but
 		# that's all we do with the default section
 		$check_for_manuals = ($sis_id eq "null" || $sis_id eq "") ? 1 : 0;
 
@@ -357,7 +364,7 @@ sub generate_enrollments
 		}
 
 		# Generate a list of usernames that are currently in the course
-		my (@current_enrollments,%teachers);
+		my (@current_enrollments);
 		foreach $en (@{$enrollments})
 		{
 			my $res = 1;
