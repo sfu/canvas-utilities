@@ -320,6 +320,7 @@ sub generate_enrollments
 		}
 		else
 		{
+			$delete_enrollments = ($sis_id =~ /:::REMOVE$/);
 			$sis_id =~ s/:::.*//;
 		}
 
@@ -413,36 +414,44 @@ sub generate_enrollments
 
 		# Grab new enrollments from source
 
-		switch ($type) {
-		    case "list" {
-			@new_enrollments = split(/:::/,membersOfMaillist($type_source));
-			break;
-		    }
-		    case "file" {
-			if (-f "$roster_files/$type_source")
-			{
+		if ($delete_enrollments)
+		{
+		    @new_enrollments = ();
+		    print "DELETING all enrollments for ",$section->{name},"\n" if ($debug);
+		}
+		else
+		{
+		    switch ($type) {
+		        case "list" {
+			    @new_enrollments = split(/:::/,membersOfMaillist($type_source));
+			    break;
+		        }
+		        case "file" {
+			    if (-f "$roster_files/$type_source")
+			    {
 				open(IN,"$roster_files/$type_source");
 				@new_enrollments = map chomp , <IN>;
 				close IN;
-			}
-			else
-			{
+			    }
+			    else
+			    {
 				print STDERR "Roster file $roster_files/$type_source not found for ",$section->{name},"\n";
-			}
-			break;
-		    }
-		    case "group" {
-			print STDERR "Groups not implemented yet\n";
-			break;
-		    }
-		    case "term" {
-			@new_enrollments = split(/:::/,rosterForSection($dept,$course,$term,$sect));
-			break;
+			    }
+			    break;
+		        }
+		        case "group" {
+			    print STDERR "Groups not implemented yet\n";
+			    break;
+		        }
+		        case "term" {
+			    @new_enrollments = split(/:::/,rosterForSection($dept,$course,$term,$sect));
+			    break;
+		        }
 		    }
 		}
 
 		# Regex means that tutorial/lab sections that drop to 0 enrollment WILL be automatically processed
-		if (scalar(@new_enrollments) == 0 && !$force && ($type ne "term" || $sect =~ /00$/))
+		if (scalar(@new_enrollments) == 0 && !$force && ($type ne "term" || $sect =~ /00$/) && !$delete_enrollments)
 		{
 			# Only print a warning if Canvas course does have enrollments
 			print STDERR "New Enrollments for $sis_id is empty! Won't process without \'force\'\n" if (scalar(@current_enrollments) > 0);
