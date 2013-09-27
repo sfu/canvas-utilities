@@ -389,8 +389,8 @@ sub generate_enrollments
 				$observers{$users_by_id{$en->{user_id}}->{login_id}} = $section;
 				next;
 			}
-			# Was this enrollment a manual one?
-                        if (exists($en->{sis_source_id}) && ($en->{sis_source_id} eq ""))
+			# Was this enrollment a manual student one?
+                        if (exists($en->{sis_source_id}) && ($en->{sis_source_id} eq "") && ($en->{type} eq "StudentEnrollment"))
 
 			{
 				# %manual is a hash whose values are arrays of enrollments for a given course
