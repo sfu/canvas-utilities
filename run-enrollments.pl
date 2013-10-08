@@ -72,8 +72,7 @@ if ($sections)
 }
 
 # See if script produced any enrollment changes. If not, exit quietly
-# Never send info email for non-prod environments
 $junk = `grep "No enrollment changes to process" $stdout`;
-exit 0 if (!$sections && ($? == 0 || !$prod));
+exit 0 if (!$sections && $? == 0 );
 
 system("cat $stdout | mail -s \"Results of process-enrollments script on $hostname\" $info_email");
