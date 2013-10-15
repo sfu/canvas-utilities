@@ -162,7 +162,8 @@ sub rest_to_canvas_paginated
             }
         }
 
-
+        $links = join(",",@links);
+        @links = split(/,/,$links);
 
 	print "Got a Link header: ", join("\n",@links) if $debug;
 
