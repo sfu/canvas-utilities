@@ -91,7 +91,7 @@ EOM
 
 # Fetch all courses and sections from Canvas unless the -f flag was
 # specified, in which case just fetch the specified sections.
-# For 'all sections', fetch all courses in $account_id (the one for SFU)
+# For 'all sections', fetch all courses in all accounts
 # then fetch all sections in each course
 #
 # If the -s flag was passed in, use this as an opportunity to check
@@ -119,9 +119,21 @@ sub fetch_courses_and_sections
 	}
 	else
 	{
-		my $completed_string = ($completed) ? "" : "?completed=false";
-		$courses = rest_to_canvas_paginated("/api/v1/accounts/$account_id/courses".$completed_string);
-		return undef if (!defined($courses));
+	    	$courses = ();
+	    	# Fetch all accounts and iterate over them
+	    	my $accounts = rest_to_canvas_paginated("/api/v1/accounts");
+	    	foreach $acc (@{$accounts})
+	    	{
+			# Skip the "Site" account
+			next if ($acc->{id} == 1);
+			$acc_id = $acc->{id};
+			my $completed_string = ($completed) ? "" : "?completed=false";
+			$acc_courses = rest_to_canvas_paginated("/api/v1/accounts/$acc_id/courses".$completed_string);
+			next if (!defined($acc_courses));
+
+			push (@{$courses},@{$acc_courses});
+		}
+		return undef if (scalar(@{$courses}) == 0);
 
 		print "Retrieved ",scalar(@{$courses})," courses from Canvas\n";
 
