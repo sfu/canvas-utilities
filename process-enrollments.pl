@@ -120,8 +120,17 @@ sub fetch_courses_and_sections
 	else
 	{
 	    	$courses = ();
-	    	# Fetch all accounts and iterate over them
-	    	my $accounts = rest_to_canvas_paginated("/api/v1/accounts");
+		my $accounts = ();
+
+		# Fetch SFU account
+	    	my $acct = rest_to_canvas_paginated("/api/v1/accounts/$account_id");
+		push (@{$accounts},$acct);
+
+	    	# Fetch all sub-accounts 
+	    	my $accts = rest_to_canvas_paginated("/api/v1/accounts/$account_id/sub_accounts");
+		push (@{$accounts},@{$accts});
+
+		# Now iterate over the whole mess
 	    	foreach $acc (@{$accounts})
 	    	{
 			# Skip the "Site" account
