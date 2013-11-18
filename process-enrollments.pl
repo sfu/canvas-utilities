@@ -123,7 +123,7 @@ sub fetch_courses_and_sections
 		my $accounts = ();
 
 		# Fetch SFU account
-	    	my $acct = rest_to_canvas("/api/v1/accounts/$account_id");
+	    	my $acct = rest_to_canvas("GET","/api/v1/accounts/$account_id");
 		push (@{$accounts},$acct);
 
 	    	# Fetch all sub-accounts 
