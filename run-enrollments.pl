@@ -36,7 +36,7 @@ exit 0 if ($1 > 1);
 exit 0 unless ($hour == 4 || $prod);
 
 # On Sundays, process ALL courses not just non-completed ones
-$completed = 1 if ($wday == 0 && $hour = 4);
+$completed = 1 if ($wday == 0 && $hour == 4);
 
 # We only email the Canvas queue if the stderr output changes between runs
 if (-e $stderr)
