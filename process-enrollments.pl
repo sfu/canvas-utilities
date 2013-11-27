@@ -58,7 +58,7 @@ push @sections_csv,"section_id,course_id,name,status";
 	}
 	$debug = $opt_d if (defined($opt_d));
 	$Canvas::debug = ($debug > 2) ? 1 : 0;
-	getService();
+	# getService();
 	getTerm();
 	fetch_courses_and_sections($opt_c) or error_exit("Couldn't fetch courses and sections from Canvas!");
 	if (!defined($opt_f))
