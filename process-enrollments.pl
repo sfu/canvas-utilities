@@ -11,7 +11,8 @@
 
 use lib '/opt/amaint/etc/lib';
 use Canvas;
-use awsomeLinux; 	# Local SFU library to handle SOAP calls to fetch course rosters
+#use awsomeLinux; 	# Local SFU library to handle SOAP calls to fetch course rosters
+use Rest;		# Local SFU Library to handle RestServer calls
 use Switch;
 use Getopt::Std;
 
@@ -444,7 +445,14 @@ sub generate_enrollments
 		{
 		    switch ($type) {
 		        case "list" {
-			    @new_enrollments = split(/:::/,membersOfMaillist($type_source));
+			    my $newenrl = members_of_maillist($type_source);
+			    if (!defined($newenrl))
+			    {
+				print STDERR "Error retrieving enrollments for $sis_id from RestServer. Skipping!\n";
+				next;
+			    }
+			    @new_enrollments = @{$newenrl};
+			    # @new_enrollments = split(/:::/,membersOfMaillist($type_source));
 			    break;
 		        }
 		        case "file" {
@@ -465,7 +473,14 @@ sub generate_enrollments
 			    break;
 		        }
 		        case "term" {
-			    @new_enrollments = split(/:::/,rosterForSection($dept,$course,$term,$sect));
+			    my $newenrl = roster_for_section($dept,$course,$term,$sect);
+			    if (!defined($newenrl))
+			    {
+				print STDERR "Error retrieving enrollments for $sis_id from RestServer. Skipping!\n";
+				next;
+			    }
+			    @new_enrollments = @{$newenrl};
+			    # @new_enrollments = split(/:::/,rosterForSection($dept,$course,$term,$sect));
 			    break;
 		        }
 		    }
@@ -529,7 +544,8 @@ sub add_new_users
 	my @adds = @_;
 	foreach my $user (@adds)
 	{
-		my ($roles,$sfuid,$lastname,$firstnames,$givenname) = split(/:::/,infoForComputingID($user)); 
+		# my ($roles,$sfuid,$lastname,$firstnames,$givenname) = split(/:::/,infoForComputingID($user)); 
+		my ($roles,$sfuid,$lastname,$firstnames,$givenname) = split(/:::/,info_for_computing_id($user)); 
 		if ($roles !~ /[a-z]+/)
 		{
 			print STDERR "Got back invalid response from infoForComputingID for $user. Skipping add\n";
