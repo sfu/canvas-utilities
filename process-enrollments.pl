@@ -436,6 +436,8 @@ sub generate_enrollments
 
 		# Grab new enrollments from source
 
+		my $failed=0;
+
 		if ($delete_enrollments)
 		{
 		    @new_enrollments = ();
@@ -449,7 +451,7 @@ sub generate_enrollments
 			    if (!defined($newenrl))
 			    {
 				print STDERR "Error retrieving enrollments for $sis_id from RestServer. Skipping!\n";
-				next;
+				$failed=1;
 			    }
 			    @new_enrollments = @{$newenrl};
 			    # @new_enrollments = split(/:::/,membersOfMaillist($type_source));
@@ -465,6 +467,7 @@ sub generate_enrollments
 			    else
 			    {
 				print STDERR "Roster file $roster_files/$type_source not found for ",$section->{name},"\n";
+				$failed=1;
 			    }
 			    break;
 		        }
@@ -477,7 +480,7 @@ sub generate_enrollments
 			    if (!defined($newenrl))
 			    {
 				print STDERR "Error retrieving enrollments for $sis_id from RestServer. Skipping!\n";
-				next;
+				$failed=1;
 			    }
 			    @new_enrollments = @{$newenrl};
 			    # @new_enrollments = split(/:::/,rosterForSection($dept,$course,$term,$sect));
@@ -486,6 +489,7 @@ sub generate_enrollments
 		    }
 		}
 
+		next if $failed;
 		# Regex means that tutorial/lab sections that drop to 0 enrollment WILL be automatically processed
 		if (scalar(@new_enrollments) == 0 && !$force && ($type ne "term" || $sect =~ /00$/) && !$delete_enrollments)
 		{
