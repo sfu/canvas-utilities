@@ -101,7 +101,6 @@ while (1) {
     );
 
     do {
-	print "waiting for msg\n";
     	$frame = $stomp->receive_frame({ timeout => $timeout });
 
     	if (!$frame)
@@ -186,7 +185,7 @@ sub process_msg
 
 	$csv .= "$user_id,$login_id,$password,$first_name,$last_name,$email,$status";
 
-	print "Processing update for user $login_id\n";
+	print `date`, " Processing update for user $login_id\n";
 	$json = rest_to_canvas("POSTRAW","/api/v1/accounts/2/sis_imports.json?extension=csv",$csv);
 	return 0 if (!defined($json));
 
