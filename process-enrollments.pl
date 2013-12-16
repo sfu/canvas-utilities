@@ -180,7 +180,11 @@ sub fetch_courses_and_sections
 	
 			    # and fetch what Amaint has..
 			    $temp = rest_to_canvas("GET","/sfu/api/v1/amaint/course/$s_id/sectionTutorials");
-			    next if (!defined($temp));
+			    if (!defined($temp))
+			    {
+				print STDERR "unable to fetch Amaint sections for $s_id\n";
+				next;
+			    }
 
 			    # lowercase it..
 			    push(@amaint_sections, map lc, @{$temp->{sectionTutorials}});
