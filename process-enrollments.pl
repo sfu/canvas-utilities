@@ -128,8 +128,9 @@ sub fetch_courses_and_sections
 		push (@{$accounts},$acct);
 
 	    	# Fetch all sub-accounts 
-	    	my $accts = rest_to_canvas_paginated("/api/v1/accounts/$account_id/sub_accounts");
-		push (@{$accounts},@{$accts});
+		# Jan 3/14: Turns out we don't need this. top-level account encompasses all courses
+	    	#my $accts = rest_to_canvas_paginated("/api/v1/accounts/$account_id/sub_accounts");
+		#push (@{$accounts},@{$accts});
 
 		# Now iterate over the whole mess
 	    	foreach $acc (@{$accounts})
