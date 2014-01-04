@@ -35,7 +35,7 @@ $debug=0;
 
 $primary_host = "msgbroker1.tier2.sfu.ca";
 $secondary_host = "msgbroker2.tier2.sfu.ca";
-$secondary_host = undef;
+#$secondary_host = undef;
 
 $port = 61613;
 
