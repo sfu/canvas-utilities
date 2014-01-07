@@ -312,7 +312,7 @@ sub getTerm
 
 sub generate_enrollments
 {
-	my ($c_id,$old_c_id,@all_enrollments,%observers,%manuals,%teachers);
+	my ($c_id,$old_c_id,@all_enrollments,%observers,%manuals,%teachers,$new_students);
 	my $force = 0;
 
 	foreach $section (@{$sections})
@@ -327,10 +327,12 @@ sub generate_enrollments
 			$old_c_id = $c_id;
 			check_observers(\%observers,\@all_enrollments);
 			check_observers(\%manuals,\@all_enrollments,1);
+			check_teachers(\%teachers,\@all_enrollments) if ($new_students);
 			%observers = ();
 			%manuals = ();
 			%teachers = ();
 			@all_enrollments = ();
+			$new_students = 0;
 		}
 
 		$force = 0;
@@ -529,6 +531,7 @@ sub generate_enrollments
 		foreach $add (@{$adds})
 		{
 			push (@new_users,$add) if (!defined($users_by_username{$add}));
+			$new_students++;
 		}
 		if (scalar(@new_users))
 		{
@@ -544,6 +547,7 @@ sub generate_enrollments
 	}
 	check_observers(\%observers,\@all_enrollments);
 	check_observers(\%manuals,\@all_enrollments,1);
+	check_teachers(\%teachers,\@all_enrollments) if ($new_students);
 }
 
 
@@ -679,6 +683,32 @@ sub do_enrollments
 
 		# course_id, sfuid, role, section_id, status, associated_user_id(blank)
 		push @enrollments_csv, join(",", $courses_by_id{$section->{course_id}}->{sis_course_id},$user_id, $role, $section->{sis_section_id}, $status, "");
+	}
+}
+
+
+# After a course has been processed, check to see if any teachers
+# show up in the enrollments list. If they do, delete them from the 
+# enrollments_csv file so they don't get added as students
+
+sub check_teachers
+{
+	my ($teachers,$all_enrollments) = @_;
+	# exit fast if there are no teachers
+	return if (!scalar(keys %{$teachers}));
+
+	my (%count,@dups);
+	map $count{$_}++ , keys %{$teachers}, @{$all_enrollments};
+	@dups = grep $count{$_} == 2, keys %{$observers};
+	# We found some teachers who are also students. Delete them from our CSV if they're there
+	# (we can't delete them if they've already been enrolled as we don't know here what section they're in)
+	if (scalar(@dups))
+	{
+		foreach my $dup (@dups)
+		{
+			my $user_id = defined($users_by_username{$dup}) ? $users_by_username{$dup}->{sis_user_id} : "##$user##";
+			@enrollments_csv = grep {!/,$user_id,/} @enrollments_csv;
+		}
 	}
 }
 
