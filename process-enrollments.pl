@@ -699,13 +699,14 @@ sub check_teachers
 
 	my (%count,@dups);
 	map $count{$_}++ , keys %{$teachers}, @{$all_enrollments};
-	@dups = grep $count{$_} == 2, keys %{$observers};
+	@dups = grep $count{$_} == 2, keys %{$teachers};
 	# We found some teachers who are also students. Delete them from our CSV if they're there
 	# (we can't delete them if they've already been enrolled as we don't know here what section they're in)
 	if (scalar(@dups))
 	{
 		foreach my $dup (@dups)
 		{
+                        print " Removing Teacher $dup from student enrollment CSV\n" if ($debug);
 			my $user_id = defined($users_by_username{$dup}) ? $users_by_username{$dup}->{sis_user_id} : "##$user##";
 			@enrollments_csv = grep {!/,$user_id,/} @enrollments_csv;
 		}
