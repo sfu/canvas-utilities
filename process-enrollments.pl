@@ -430,7 +430,7 @@ sub generate_enrollments
 			}
 
 			# Track the teachers/designers separately as well
-			$teachers{$users_by_id{$en->{user_id}}->{login_id}}++ if ($en->{type} ne "StudentEnrollment");
+			$teachers{$users_by_id{$en->{user_id}}->{login_id}}++ if ($en->{type} ne "StudentEnrollment" && $en->{type} ne "StudentViewEnrollment");
 
 			next if ($check_for_manuals);
 
