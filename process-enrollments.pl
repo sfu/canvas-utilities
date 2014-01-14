@@ -324,10 +324,10 @@ sub generate_enrollments
 		if ($c_id != $old_c_id)
 		{
 			# Starting a new course. See if there were any observers or manuals in the last course
-			$old_c_id = $c_id;
 			check_observers(\%observers,\@all_enrollments);
 			check_observers(\%manuals,\@all_enrollments,1);
-			check_teachers(\%teachers,\@all_enrollments) if ($new_students);
+			check_teachers(\%teachers,\@all_enrollments,$course_by_id{$old_c_id}->{sis_course_id}) if ($new_students);
+			$old_c_id = $c_id;
 			%observers = ();
 			%manuals = ();
 			%teachers = ();
@@ -547,7 +547,7 @@ sub generate_enrollments
 	}
 	check_observers(\%observers,\@all_enrollments);
 	check_observers(\%manuals,\@all_enrollments,1);
-	check_teachers(\%teachers,\@all_enrollments) if ($new_students);
+	check_teachers(\%teachers,\@all_enrollments,$course_by_id{$c_id}->{sis_course_id}) if ($new_students);
 }
 
 
@@ -690,10 +690,19 @@ sub do_enrollments
 # After a course has been processed, check to see if any teachers
 # show up in the enrollments list. If they do, delete them from the 
 # enrollments_csv file so they don't get added as students
+#
+# Under exceedingly rare conditions, this can prevent a user from
+# being enrolled as a student in another course:
+#  - the user must be both a teacher and a student in a course ("course A")
+#  - the user must be a student in another course ("course B")
+#  - the user must not have been enrolled in course B before being added as a teacher in course A
+#  - course B must be processed by this script before course A
+# Because this code just walks the csv file looking for student enrollments, it will remove the "add" to
+# course B when it removes the student enrollment from course A
 
 sub check_teachers
 {
-	my ($teachers,$all_enrollments) = @_;
+	my ($teachers,$all_enrollments,$sis_course_id) = @_;
 	# exit fast if there are no teachers
 	return if (!scalar(keys %{$teachers}));
 
@@ -706,9 +715,9 @@ sub check_teachers
 	{
 		foreach my $dup (@dups)
 		{
-                        print " Removing Teacher $dup from student enrollment CSV\n" if ($debug);
+                        print " Removing Teacher $dup from student enrollment CSV\n"; # if ($debug);
 			my $user_id = defined($users_by_username{$dup}) ? $users_by_username{$dup}->{sis_user_id} : "##$user##";
-			@enrollments_csv = grep {!/,$user_id,/} @enrollments_csv;
+			@enrollments_csv = grep {!/$sis_course_id,$user_id,/} @enrollments_csv;
 		}
 	}
 }
