@@ -213,10 +213,11 @@ sub fetch_courses_and_sections
 				    # Find the dropped section in the existing sections. We need its unique SIS_ID
 				    foreach $s (@{$course_sections})
 				    {
-					if ($s->{sis_section_id} =~ /$sec:::/)
+					my $sec_id = $s->{sis_section_id};
+					if ($sec_id =~ /$sec:::/)
 					{
-				    	    push @sections_csv,$s->{sis_section_id}.",$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",deleted";
-				    	    print "  ".$s->{sis_section_id}.",$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",deleted\n" if ($debug);
+				    	    push @sections_csv,"$sec_id,$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",deleted";
+				    	    print "  $sec_id,$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",deleted\n" if ($debug);
 					    break;
 					}
 				    }
