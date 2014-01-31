@@ -192,7 +192,7 @@ sub fetch_courses_and_sections
 
 			    # then compare them and generate any new sections
 			    ($adds,$drops) = compare_arrays(\@amaint_sections,\@canvas_sections);
-			    if (scalar(@{$adds}) )
+			    if (scalar(@{$adds}) || scalar(@{$drops}) )
 			    {
 				print "Sections to add for $s_id: ", join(",",@{$adds}),"\n" if ($debug);
 				($term,$dept,$course,$junk) = split(/-/,$s_id);
@@ -201,6 +201,18 @@ sub fetch_courses_and_sections
 				{
 				    $sec_id = "$term-$dept-$course-$sec".":::$time";
 				    push @sections_csv,"$sec_id,$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",active";
+				}
+				foreach $sec (@{$drops})
+				{
+				    # Find the dropped section in the existing sections. We need its unique SIS_ID
+				    foreach $s (@{$course_sections})
+				    {
+					if ($s->{sis_section_id} =~ /$sec:::/)
+					{
+				    	    push @sections_csv,$s->{sis_section_id}.",$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",deleted";
+					    break;
+					}
+				    }
 				}
 			    }
 			}
