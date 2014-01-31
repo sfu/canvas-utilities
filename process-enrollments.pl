@@ -216,6 +216,7 @@ sub fetch_courses_and_sections
 					if ($s->{sis_section_id} =~ /$sec:::/)
 					{
 				    	    push @sections_csv,$s->{sis_section_id}.",$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",deleted";
+				    	    print "  ".$s->{sis_section_id}.",$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",deleted\n" if ($debug);
 					    break;
 					}
 				    }
