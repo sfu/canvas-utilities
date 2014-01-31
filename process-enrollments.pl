@@ -189,12 +189,18 @@ sub fetch_courses_and_sections
 
 			    # lowercase it..
 			    push(@amaint_sections, map lc, @{$temp->{sectionTutorials}});
+			    if ($debug)
+			    {
+				print " Canvas sections for $s_id: ",join(",",@canvas_sections,"\n");
+				print " Amaint sections for $s_id: ",join(",",@amaint_sections,"\n");
+			    }
 
 			    # then compare them and generate any new sections
 			    ($adds,$drops) = compare_arrays(\@amaint_sections,\@canvas_sections);
 			    if (scalar(@{$adds}) || scalar(@{$drops}) )
 			    {
-				print "Sections to add for $s_id: ", join(",",@{$adds}),"\n" if ($debug);
+				print "Sections to add for $s_id: ", join(",",@{$adds}),"\n" if ($debug && scalar(@{$adds}));
+				print "Sections to drop for $s_id: ", join(",",@{$drops}),"\n" if ($debug && scalar(@{$drops}));
 				($term,$dept,$course,$junk) = split(/-/,$s_id);
 				$time = time();
 				foreach $sec (@{$adds})
