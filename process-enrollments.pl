@@ -183,12 +183,24 @@ sub fetch_courses_and_sections
 			    $temp = rest_to_canvas("GET","/sfu/api/v1/amaint/course/$s_id/sectionTutorials");
 			    if (!defined($temp))
 			    {
-				print STDERR "unable to fetch Amaint sections for $s_id\n";
-				next;
+				if ($@ =~ /^404/)
+				{
+				    @amaint_sections = ();
+				    print "Amaint says $s_id contains no sections\n" if $debug;
+				}
+				else
+				{
+				    print STDERR "unable to fetch Amaint sections for $s_id\n";
+				    next;
+				}
 			    }
 
-			    # lowercase it..
-			    push(@amaint_sections, map lc, @{$temp->{sectionTutorials}});
+			    else
+			    {
+			        # lowercase it..
+			        push(@amaint_sections, map lc, @{$temp->{sectionTutorials}});
+			    }
+
 			    if ($debug)
 			    {
 				print " Canvas sections for $s_id: ",join(",",@canvas_sections,"\n");
