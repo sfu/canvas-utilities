@@ -116,6 +116,7 @@ sub rest_to_canvas
     else {
         print STDERR $resp->status_line, "\n";
         print $resp->decoded_content,"\n" if $debug;
+	$@ = $resp->status_line;
 	return undef;
     }
 }
@@ -297,6 +298,7 @@ sub post
     else {
         print STDERR $resp->status_line, "\n";
         print $resp->decoded_content,"\n" if $debug;
+        $@ = $resp->status_line;
 	return undef;
     }
 }
