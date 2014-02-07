@@ -186,7 +186,7 @@ sub fetch_courses_and_sections
 				if ($@ =~ /^404/)
 				{
 				    @amaint_sections = ();
-				    print "Amaint says $s_id contains no sections\n" if $debug;
+				    print "Warning: Amaint says $s_id contains no sections\n";
 				}
 				else
 				{
