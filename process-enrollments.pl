@@ -170,6 +170,16 @@ sub fetch_courses_and_sections
 			{
 			    # Then we can determine Amaint tutorial sections, so save what Canvas has
 
+			    # One more check: if this course has no enrollments yet, don't add any sections
+			    # (note, deliberately not using the 'paginated' call so that we only get the first 10 results)
+			    my $c_en = rest_to_canvas("GET","/api/v1/courses/$c_id/enrollments");
+			    if (!defined($c_en))
+			    {
+				print "Couldn't get enrollments for course $c_id! Skipping check for missing sections\n";
+				next;
+			    }
+			    my $has_enrollments = scalar(@{$c_en});
+
 			    my (@canvas_sections, @amaint_sections);
 			    foreach $s (@{$course_sections})
 			    {
@@ -215,11 +225,19 @@ sub fetch_courses_and_sections
 				print "Sections to drop for $s_id: ", join(",",@{$drops}),"\n" if ($debug && scalar(@{$drops}));
 				($term,$dept,$course,$junk) = split(/-/,$s_id);
 				$time = time();
-				foreach $sec (@{$adds})
+				if ($has_enrollments)
 				{
-				    $sec_id = "$term-$dept-$course-$sec".":::$time";
-				    push @sections_csv,"$sec_id,$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",active";
+				    foreach $sec (@{$adds})
+				    {
+				        $sec_id = "$term-$dept-$course-$sec".":::$time";
+				        push @sections_csv,"$sec_id,$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",active";
+				    }
 				}
+				else
+				{
+				    print "Course $s_id appears to have no enrollments. Won't add missing sections\n" if (scalar(@{$adds}));
+				}
+
 				foreach $sec (@{$drops})
 				{
 				    # Find the dropped section in the existing sections. We need its unique SIS_ID
