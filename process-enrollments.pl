@@ -46,7 +46,7 @@ my ($total_enrollments,%total_users,$total_sections);
 getopts('cshd:f:');
 
 push @enrollments_csv,"course_id,user_id,role,section_id,status,associated_user_id";
-$users_csv = "user_id,login_id,password,first_name,last_name,email,status\n";
+$users_csv = "user_id,login_id,password,first_name,last_name,short_name,email,status\n";
 push @sections_csv,"section_id,course_id,name,status";
 
 # Main block
@@ -616,9 +616,10 @@ sub add_new_users
 			print STDERR "Got back invalid response from infoForComputingID for $user. Skipping add\n";
 			next;
 		}
+		$givenname .= " $lastname" if ($givenname ne "");
 		#user_id,login_id,password,first_name,last_name,email,status\
-		print "Adding new user to csv: $sfuid,$user,$givenname,$lastname\n" if $debug;
-		$users_csv .= "$sfuid,$user,,$givenname,$lastname,$user\@sfu.ca,active\n";
+		print "Adding new user to csv: $sfuid,$user,$firstnames,$lastname,$givenname\n" if $debug;
+		$users_csv .= "$sfuid,$user,,$firstnames,$lastname,$givenname,$user\@sfu.ca,active\n";
 		$users_need_adding++;
 
 		# Bit of a hack, but we want to avoid pulling all users from Canvas if we're just

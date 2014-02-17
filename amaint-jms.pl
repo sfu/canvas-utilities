@@ -153,7 +153,7 @@ sub process_msg
 	# Add code in here to process deletes differently?
 
 	# We handle user adds by packaging them up as a "CSV" and using the SIS_ID import API
-	$csv = "user_id,login_id,password,first_name,last_name,email,status\n";
+	$csv = "user_id,login_id,password,first_name,last_name,short_name,email,status\n";
 
 	$login_id = $xpc->findvalue("/syncLogin/username");
 	$user_id = $xpc->findvalue("/syncLogin/person/sfuid");
@@ -176,16 +176,18 @@ sub process_msg
 		$password = "";
 	}
 
-	$first_name = $xpc->findvalue("/syncLogin/person/preferredName") ||  $xpc->findvalue("/syncLogin/person/firstnames");
+	$first_name = $xpc->findvalue("/syncLogin/person/firstnames");
 	$last_name = $xpc->findvalue("/syncLogin/person/surname");
+	$short_name = $xpc->findvalue("/syncLogin/person/preferredName") || "";
+	$short_name .= " $last_name" if ($short_name ne "");
 	$email = $login_id . "\@sfu.ca";
 
 	# Status can be either "active" or "deleted". We may use "deleted" in the future
 	$status = "active";
 
-	$csv .= "$user_id,$login_id,$password,$first_name,$last_name,$email,$status";
+	$csv .= "$user_id,$login_id,$password,$first_name,$last_name,$short_name,$email,$status";
 
-	print `date`, " Processing update for user $login_id\n";
+	print `date`, " Processing update for user $login_id\n$csv\n";
 	$json = rest_to_canvas("POSTRAW","/api/v1/accounts/2/sis_imports.json?extension=csv",$csv);
 	return 0 if (!defined($json));
 
