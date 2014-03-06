@@ -240,6 +240,8 @@ sub fetch_courses_and_sections
 
 				foreach $sec (@{$drops})
 				{
+				    my $course_has_enrollments = $has_enrollments;
+				    my $ok_to_delete = 0;
 				    # Find the dropped section in the existing sections. We need its unique SIS_ID
 				    foreach $s (@{$course_sections})
 				    {
@@ -248,8 +250,41 @@ sub fetch_courses_and_sections
                                         ($t,$d,$c,$sect) = split(/-/,$sec_id);
                                         if ($sect eq $sec)
                                         {
-                                            push @sections_csv,$s->{sis_section_id}.",$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",deleted";
-                                            print "  ",$s->{sis_section_id},",$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",deleted\n" if ($debug);
+					    if (!$course_has_enrollments)
+					    {
+						# No enrollments in any section of the course. Definitely ok to delete this section
+						$ok_to_delete = 1;
+					    }
+					    else
+					    {
+						# Some enrollments. Better check this section
+			    			my $s_en = rest_to_canvas_paginated("GET","/api/v1/courses/$sec_id/enrollments");
+			    			if (!defined($s_en))
+			    			{
+							print STDERR "Couldn't get enrollments for course $c_id! Skipping check for missing sections\n";
+							next;
+			    			}
+						if (!scalar(@{$s_en}))
+						{
+						    # No enrollments - ok to delete this section
+						    $ok_to_delete = 1;
+						}
+						else
+						{
+						    $ok_to_delete = 0;
+						}
+					    }
+					    if ($ok_to_delete)
+					    {
+                                                push @sections_csv,$s->{sis_section_id}.",$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",deleted";
+                                                print "  ",$s->{sis_section_id},",$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",deleted\n" if ($debug);
+					    }
+					    else
+					    {
+						print "Can't delete $sec_id. Has ", scalar(@{$s_en})," enrollments\n";
+						## TODO
+						# Add code here to print enrollments so we can delete them
+					    }
                                             break;
                                         }
 				    }
