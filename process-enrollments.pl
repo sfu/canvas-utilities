@@ -258,7 +258,7 @@ sub fetch_courses_and_sections
 					    else
 					    {
 						# Some enrollments. Better check this section
-			    			my $s_en = rest_to_canvas_paginated("GET","/api/v1/courses/$sec_id/enrollments");
+			    			my $s_en = rest_to_canvas_paginated("/api/v1/courses/$sec_id/enrollments");
 			    			if (!defined($s_en))
 			    			{
 							print STDERR "Couldn't get enrollments for course $c_id! Skipping check for missing sections\n";
