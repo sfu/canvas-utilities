@@ -242,6 +242,7 @@ sub fetch_courses_and_sections
 				{
 				    my $course_has_enrollments = $has_enrollments;
 				    my $ok_to_delete = 0;
+				    my $s_en = $c_en;
 				    # Find the dropped section in the existing sections. We need its unique SIS_ID
 				    foreach $s (@{$course_sections})
 				    {
@@ -258,12 +259,13 @@ sub fetch_courses_and_sections
 					    else
 					    {
 						# Some enrollments. Better check this section
-			    			my $s_en = rest_to_canvas_paginated("/api/v1/courses/$sec_id/enrollments");
-			    			if (!defined($s_en))
-			    			{
-							print STDERR "Couldn't get enrollments for course $c_id! Skipping check for missing sections\n";
+						$s_en = rest_to_canvas_paginated("/api/v1/sections/".$s->{id}."/enrollments");
+						if (!defined($s_en))
+						{
+							print STDERR "Couldn't get enrollments for section $s->{id} $sec_id! Can't determine if it's deletable\n";
 							next;
-			    			}
+						}
+
 						if (!scalar(@{$s_en}))
 						{
 						    # No enrollments - ok to delete this section
