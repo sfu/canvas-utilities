@@ -24,8 +24,14 @@ $info_email = "hillman\@sfu.ca,mstanger\@sfu.ca,andrewleung\@sfu.ca,mluck\@sfu.c
 # At 4am, we run with debug=1 to give verbose output
 $debug = 1 if ($hour == 4);
 
+$subject = "Results of process-enrollments script on $hostname";
+
 # At 6am, we process missing sections
-$sections = 1 if ($hour == 6);
+if ($hour == 6)
+{
+	$sections = 1;
+	$subject = "Canvas Section Changes on $hostname";
+}
 
 # Only run under prod conditions if host is canvas-mp
 $prod = 1 if ($hostname =~ /canvas-mp(\d*)/);
