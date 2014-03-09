@@ -81,4 +81,4 @@ if ($sections)
 $junk = `grep "No enrollment changes to process" $stdout`;
 exit 0 if (!$sections && $? == 0 );
 
-system("cat $stdout | mail -s \"Results of process-enrollments script on $hostname\" $info_email");
+system("cat $stdout | mail -s \"$subject\" $info_email");
