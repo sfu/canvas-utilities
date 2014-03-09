@@ -61,6 +61,9 @@ push @sections_csv,"section_id,course_id,name,status";
 	# getService();
 	getTerm();
 	fetch_courses_and_sections($opt_c) or error_exit("Couldn't fetch courses and sections from Canvas!");
+	# Don't bother doing enrollment processing if we're doing a missing sections run
+	exit 0 if (defined($opt_s));
+
 	if (!defined($opt_f))
 	{
 		fetch_users() or error_exit("Couldn't fetch user list from Canvas!");
