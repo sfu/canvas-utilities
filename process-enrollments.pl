@@ -315,8 +315,12 @@ sub fetch_courses_and_sections
 						    }
 						    else
 						    {
+							my $role = "student";
+							$role = "ta" if ($en->{type} eq "TaEnrollment";
+							$role = "teacher" if ($en->{type} eq "TeacherEnrollment";
+							$role = "designer" if ($en->{type} eq "DesignerEnrollment";
 						    	# course_id, sfuid, role, section_id, status, associated_user_id(blank)
-						    	push @drops, join(",", $en->{sis_course_id},$sis_user_id, $en->{type}, $en->{sis_section_id}, "deleted", "");
+						    	push @drops, join(",", $en->{sis_course_id},$sis_user_id, $role, $en->{sis_section_id}, "deleted", "");
 						    }
 						}
 						$has_drops=1;
