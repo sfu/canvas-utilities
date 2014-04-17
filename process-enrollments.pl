@@ -300,10 +300,17 @@ sub fetch_courses_and_sections
 						foreach $en (@{$s_en})
 						{
 						    fetch_user($en->{user_id});
-						    my $sis_user_id = defined($users_by_id{$en->{user_id}}) ? $users_by_id{$en->{user_id}}->{sis_user_id} : "##$user##";
+						    my $sis_user_id = defined($users_by_id{$en->{user_id}}) ? $users_by_id{$en->{user_id}}->{sis_user_id} : "##".$en->{user_id}."##";
 
-						    # course_id, sfuid, role, section_id, status, associated_user_id(blank)
-						    push @drops, join(",", $en->{sis_course_id},$user_id, $en->{type}, $en->{sis_section_id}, "deleted", "");
+						    if ($sis_user_id =~ /^##/)
+						    {
+							print "Couldn't retrieve sis_user_id for $sis_user_id so can't drop their enrollment in $en->{sis_section_id}\n";
+						    }
+						    else
+						    {
+						    	# course_id, sfuid, role, section_id, status, associated_user_id(blank)
+						    	push @drops, join(",", $en->{sis_course_id},$sis_user_id, $en->{type}, $en->{sis_section_id}, "deleted", "");
+						    }
 						}
 						$has_drops=1;
 					    }
