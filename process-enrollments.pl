@@ -151,6 +151,10 @@ sub fetch_courses_and_sections
 
 		print "Retrieved ",scalar(@{$courses})," courses from Canvas\n";
 
+		my @drops;
+		push @drops,@enrollments_csv;
+		my $has_drops = 0;
+
 		foreach $course (@{$courses})
 		{
 			$c_id = $course->{id};
@@ -167,6 +171,9 @@ sub fetch_courses_and_sections
 				return undef;
 			}
 			push @sections,@{$course_sections};
+
+			# Check for missing sections. For each course, fetch all sections and
+			# compare the list to what Amaint says. Produce a list of adds and drops
 
 			# If -s flag was given, and this course is an SIS course, and it's not cross-listed..
 			if (defined($opt_s) && $s_id =~ /^\d\d\d\d/ && $s_id !~ /[^:]:[^:]/)
@@ -289,6 +296,16 @@ sub fetch_courses_and_sections
 						print "Can't delete $sec_id. Has ", scalar(@{$s_en})," enrollments\n";
 						## TODO
 						# Add code here to print enrollments so we can delete them
+						my $en;
+						foreach $en (@{$s_en})
+						{
+						    fetch_user($en->{user_id});
+						    my $sis_user_id = defined($users_by_id{$en->{user_id}}) ? $users_by_id{$en->{user_id}}->{sis_user_id} : "##$user##";
+
+						    # course_id, sfuid, role, section_id, status, associated_user_id(blank)
+						    push @drops, join(",", $en->{sis_course_id},$user_id, $en->{type}, $en->{sis_section_id}, "deleted", "");
+						}
+						$has_drops=1;
 					    }
                                             break;
                                         }
@@ -300,6 +317,10 @@ sub fetch_courses_and_sections
 		if (defined($opt_s) && scalar(@sections_csv) > 1)
 		{
 			print "\n\n",join("\n",@sections_csv,"","");
+		}
+		if (defined($opt_s) && $has_drops)
+		{
+			print "\n\n",join("\n",@drops,"","");
 		}
 	}
 
