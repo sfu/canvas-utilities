@@ -283,7 +283,14 @@ sub fetch_courses_and_sections
 						}
 						else
 						{
-						    $ok_to_delete = 0;
+						    foreach (@{$s_en})
+						    {
+							if ($_->{type} ne "StudentViewEnrollment")
+							{
+						    	    $ok_to_delete = 0;
+							    last;
+							}
+						    }
 						}
 					    }
 					    if ($ok_to_delete)
