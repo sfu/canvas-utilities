@@ -303,8 +303,7 @@ sub fetch_courses_and_sections
 					    else
 					    {
 						print "Can't delete $sec_id. Has ", scalar(@{$s_en})," enrollments\n";
-						## TODO
-						# Add code here to print enrollments so we can delete them
+
 						my $en;
 						foreach $en (@{$s_en})
 						{
@@ -318,9 +317,15 @@ sub fetch_courses_and_sections
 						    else
 						    {
 							my $role = "student";
-							$role = "ta" if ($en->{type} eq "TaEnrollment");
-							$role = "teacher" if ($en->{type} eq "TeacherEnrollment");
-							$role = "designer" if ($en->{type} eq "DesignerEnrollment");
+
+							# For now, only delete student enrollments. If we delete any other type of enrollment, we
+							# could inadvertently block their access to the course. If there are non-student enrollments, 
+							# it'll make the section undeletable but it'll be fairly obvious why
+							next if ($en->{type} ne "StudentEnrollment");
+							#$role = "ta" if ($en->{type} eq "TaEnrollment");
+							#$role = "teacher" if ($en->{type} eq "TeacherEnrollment");
+							#$role = "designer" if ($en->{type} eq "DesignerEnrollment");
+
 						    	# course_id, sfuid, role, section_id, status, associated_user_id(blank)
 						    	push @drops, join(",", $en->{sis_course_id},$sis_user_id, $role, $en->{sis_section_id}, "deleted", "");
 						    }
