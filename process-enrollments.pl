@@ -283,11 +283,13 @@ sub fetch_courses_and_sections
 						}
 						else
 						{
+						    $ok_to_delete = 1;
 						    foreach (@{$s_en})
 						    {
 							if ($_->{type} ne "StudentViewEnrollment")
 							{
 						    	    $ok_to_delete = 0;
+                                                            print "  Found a ",$_->{type}, " enrollment in $sec_id\n" if ($debug);
 							    last;
 							}
 						    }
