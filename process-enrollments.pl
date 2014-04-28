@@ -305,6 +305,7 @@ sub fetch_courses_and_sections
 						print "Can't delete $sec_id. Has ", scalar(@{$s_en})," enrollments\n";
 
 						my $en;
+						$ok_to_delete=1;
 						foreach $en (@{$s_en})
 						{
 						    fetch_user($en->{user_id});
@@ -321,7 +322,11 @@ sub fetch_courses_and_sections
 							# For now, only delete student enrollments. If we delete any other type of enrollment, we
 							# could inadvertently block their access to the course. If there are non-student enrollments, 
 							# it'll make the section undeletable but it'll be fairly obvious why
-							next if ($en->{type} ne "StudentEnrollment");
+							if ($en->{type} ne "StudentEnrollment")
+							{
+							    $ok_to_delete=0;
+							    next;
+							}
 							#$role = "ta" if ($en->{type} eq "TaEnrollment");
 							#$role = "teacher" if ($en->{type} eq "TeacherEnrollment");
 							#$role = "designer" if ($en->{type} eq "DesignerEnrollment");
@@ -331,6 +336,13 @@ sub fetch_courses_and_sections
 						    }
 						}
 						$has_drops=1;
+						if ($ok_to_delete)
+						{
+						    # Section only had student enrollments, so add it to the sections to delete but mark with a '*' to
+						    # indicate it can't be deleted until after enrollment deletions have been processed (i.e requires a manual decision)
+                                                    push @sections_csv,$s->{sis_section_id}.",$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",deleted*";
+                                                    print "  ",$s->{sis_section_id},",$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",deleted*\n" if ($debug);
+						}
 					    }
                                             break;
                                         }
