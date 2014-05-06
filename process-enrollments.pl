@@ -242,6 +242,10 @@ sub fetch_courses_and_sections
 				        $sec_id = "$term-$dept-$course-$sec".":::$time";
 				        push @sections_csv,"$sec_id,$s_id,\"".uc($dept).uc($course)." ".uc($sec)."\",active";
 				    }
+				    # Don't process drops if we've done adds. Otherwise, if we're adding, say D101,D102
+				    # and dropping D100, a student will lose access until D101,D102 have been populated. 
+				    # So we'll skip the drop and get them next time we run
+				    next;
 				}
 				else
 				{
