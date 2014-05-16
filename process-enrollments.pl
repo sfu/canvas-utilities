@@ -308,6 +308,10 @@ sub fetch_courses_and_sections
 					    {
 						print "Can't delete $sec_id. Has ", scalar(@{$s_en})," enrollments\n";
 
+						# If in current term, just don't delete populated sections at all, otherwise we could kick students
+						# out of their groups due to Canvas bug
+						next if ($term == $currentTerm);
+
 						my $en;
 						$ok_to_delete=1;
 						foreach $en (@{$s_en})
