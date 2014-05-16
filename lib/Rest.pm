@@ -132,6 +132,18 @@ sub members_of_maillist
     return $members;
 }
 
+sub SFU_members_of_maillist
+{
+    my $list = shift;
+    my $result = [];
+    my $members = members_of_maillist($list);
+    foreach (@{$members})
+    {
+	push (@{$result},$_) if (!/\@/);
+    }
+    return $result;
+}
+
 # my ($roles,$sfuid,$lastname,$firstnames,$givenname) = split(/:::/,infoForComputingID($user));
 
 sub info_for_computing_id

@@ -608,7 +608,7 @@ sub generate_enrollments
 		{
 		    switch ($type) {
 		        case "list" {
-			    my $newenrl = members_of_maillist($type_source);
+			    my $newenrl = SFU_members_of_maillist($type_source);
 			    if (!defined($newenrl))
 			    {
 				print STDERR "Error retrieving enrollments for $sis_id from RestServer. Skipping!\n";
