@@ -3,7 +3,7 @@
 package Rest;
 require Exporter;
 @ISA    = qw(Exporter);
-@EXPORT = qw(rest_to_restserver members_of_maillist roster_for_section info_for_computing_id);
+@EXPORT = qw(rest_to_restserver members_of_maillist SFU_members_of_maillist roster_for_section info_for_computing_id);
 
 use HTTP::Request::Common qw(GET POST PUT DELETE);
 use LWP::UserAgent;
