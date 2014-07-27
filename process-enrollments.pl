@@ -136,6 +136,7 @@ sub fetch_courses_and_sections
 		#push (@{$accounts},@{$accts});
 
 		# Now iterate over the whole mess
+		# and for each account, fetch all courses
 	    	foreach $acc (@{$accounts})
 	    	{
 			# Skip the "Site" account
@@ -155,6 +156,8 @@ sub fetch_courses_and_sections
 		push @drops,@enrollments_csv;
 		my $has_drops = 0;
 
+		# Iterate through each course, fetching all sections. 
+		# If -s flag was given, compare to what should be there and create missing ones and delete extras
 		foreach $course (@{$courses})
 		{
 			$c_id = $course->{id};
@@ -180,7 +183,7 @@ sub fetch_courses_and_sections
 			{
 			    # Then we can determine Amaint tutorial sections, so save what Canvas has
 
-			    # One more check: if this course has no enrollments yet, don't add any sections
+			    # One more check: if this course has no enrollments yet, don't add any sections (requested by TLC)
 			    # (note, deliberately not using the 'paginated' call so that we only get the first 10 results)
 			    my $c_en = rest_to_canvas("GET","/api/v1/courses/$c_id/enrollments");
 			    if (!defined($c_en))
@@ -199,7 +202,7 @@ sub fetch_courses_and_sections
 				push(@canvas_sections,lc($sect));
 			    }
 	
-			    # and fetch what Amaint has..
+			    # and fetch what Amaint has (via SFU API in Canvas)..
 			    $temp = rest_to_canvas("GET","/sfu/api/v1/amaint/course/$s_id/sectionTutorials");
 			    if (!defined($temp))
 			    {
@@ -252,6 +255,8 @@ sub fetch_courses_and_sections
 				    print "Course $s_id appears to have no enrollments. Won't add missing sections\n" if (scalar(@{$adds}));
 				}
 
+				# section drops are much harder. Need to determine if there are any student enrollments that
+				# must be deleted before the section can be deleted
 				foreach $sec (@{$drops})
 				{
 				    my $course_has_enrollments = $has_enrollments;
@@ -310,6 +315,8 @@ sub fetch_courses_and_sections
 
 						# If in current term, just don't delete populated sections at all, otherwise we could kick students
 						# out of their groups due to Canvas bug
+						# [ We can remove this once we go back to multi-section enrollments (i.e. student is d100+d101) 
+						# because a student will always be in at least one section ]
 						next if ($term == $currentTerm);
 
 						my $en;
@@ -452,8 +459,8 @@ sub getTerm
 # The meat of the matter. Iterate through sections comparing their enrollments to what they should be
 # Once finished, we'll have a users.csv and an enrollments.csv that each need to be processed.
 #
-# We also check for observer roles in *any* section of a course. After checking all sections of a course,
-# we check all current enrollments and see if they match any observer role and if so, remove the observer role
+# We also check for observer roles in *any* section of a course. Observers are used for Auditors of a
+# course. They *may* also show up in the SIMS feed. If they do, don't re-add them as a student
 #
 # Support for manually added students: Students with no sis_source_id defined are treated almost identically
 # to observers, but are kept in a separate hash. For any 'manual' user who is enrolled in any section of a given
@@ -481,12 +488,10 @@ sub generate_enrollments
 		$c_id = $section->{'course_id'};
 		if ($c_id != $old_c_id)
 		{
-			# Starting a new course. See if there were any observers or manuals in the last course
-			check_observers(\%observers,\@all_enrollments);
+			# Starting a new course. See if there were any manuals in the last course
 			check_observers(\%manuals,\@all_enrollments,1);
 			check_teachers(\%teachers,\@all_enrollments,$course_by_id{$old_c_id}->{sis_course_id}) if ($new_students);
 			$old_c_id = $c_id;
-			%observers = ();
 			%manuals = ();
 			%teachers = ();
 			@all_enrollments = ();
@@ -552,7 +557,7 @@ sub generate_enrollments
 		}
 
 		# Generate a list of usernames that are currently in the course
-		my (@current_enrollments);
+		my (@current_enrollments,@current_observers);
 		foreach $en (@{$enrollments})
 		{
 			my $res = 1;
@@ -573,7 +578,7 @@ sub generate_enrollments
 
 			if ($en->{type} eq "ObserverEnrollment")
 			{
-				$observers{$users_by_id{$en->{user_id}}->{login_id}} = $section;
+				push @current_observers,$users_by_id{$en->{user_ud}}->{login_id};
 				next;
 			}
 			# Was this enrollment a manual student one?
@@ -672,6 +677,11 @@ sub generate_enrollments
 
 		$total_enrollments += scalar(@new_enrollments);
 
+		# Observers are now Audit students. Add them to both arrays to ensure they don't 
+		# get flagged for either addition or removal
+		push(@new_enrollments,@current_observers);
+		push(@current_enrollments,@current_observers);
+		
 		# Now we have our old and new enrollments. Calculate the diff
 		($adds,$drops) = compare_arrays(\@new_enrollments,\@current_enrollments);
 		push @all_enrollments,@new_enrollments;
@@ -703,7 +713,6 @@ sub generate_enrollments
 		add_enrollments($adds,$section,\%teachers);
 
 	}
-	check_observers(\%observers,\@all_enrollments);
 	check_observers(\%manuals,\@all_enrollments,1);
 	check_teachers(\%teachers,\@all_enrollments,$course_by_id{$c_id}->{sis_course_id}) if ($new_students);
 }
