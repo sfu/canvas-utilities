@@ -578,7 +578,7 @@ sub generate_enrollments
 
 			if ($en->{type} eq "ObserverEnrollment")
 			{
-				push @current_observers,$users_by_id{$en->{user_ud}}->{login_id};
+				push @current_observers,$users_by_id{$en->{user_id}}->{login_id};
 				next;
 			}
 			# Was this enrollment a manual student one?
