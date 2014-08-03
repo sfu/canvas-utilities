@@ -203,7 +203,7 @@ sub fetch_courses_and_sections
 			    }
 	
 			    # and fetch what Amaint has (via SFU API in Canvas)..
-			    $temp = rest_to_canvas("GET","/sfu/api/v1/amaint/course/$s_id/sectionTutorials");
+			    $temp = rest_to_canvas("GET","/sfu/api/v1/amaint/course/$s_id/sections");
 			    if (!defined($temp))
 			    {
 				if ($@ =~ /^404/)
@@ -221,7 +221,7 @@ sub fetch_courses_and_sections
 			    else
 			    {
 			        # lowercase it..
-			        push(@amaint_sections, map lc, @{$temp->{sectionTutorials}});
+			        push(@amaint_sections, map lc, @{$temp->{sections}});
 			    }
 
 			    if ($debug)
