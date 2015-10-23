@@ -396,11 +396,12 @@ sub fetch_users
 	print "Fetched ",scalar(@{$users})," users from Canvas\n";
 	foreach $u (@{$users})
 	{
-		# Don't include users that don't have an SIS ID (SFUID) defined. Forces them to be reimported if they're in any courses)
-		next if (!$u->{sis_user_id});
-
-		$users_by_username{$u->{login_id}} = $u;
-		$users_by_id{$u->{id}} = $u;
+		# Don't include users that don't have an SIS ID (SFUID) defined unless they're external users. Forces local users to be reimported if they're in any courses)
+		if ($u->{sis_user_id} || $u->{login_id} =~ /@/)
+		{
+			$users_by_username{$u->{login_id}} = $u;
+			$users_by_id{$u->{id}} = $u;
+		}
 	}
 	print join("\nUser: ",sort(keys %users_by_username)) if ($debug > 2);
 
@@ -414,12 +415,11 @@ sub fetch_user
 	return undef if ($u_id < 1);
 	$user = rest_to_canvas("GET","/api/v1/users/$u_id/profile");
 	return undef if (!defined($user));
-	if ($user->{sis_user_id})
+	if ($user->{sis_user_id} || $user->{login_id} =~ /@/)
 	{
 		$users_by_username{$user->{login_id}} = $user;
 		$users_by_id{$user->{id}} = $user;
 	}
-
 	return 1;
 }
 
