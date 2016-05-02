@@ -795,12 +795,14 @@ sub check_observers
 	
 			    # Now process the unenrollment of the manually added user
 			    print "Deleting Manual Student $dup from section ",$en->{section_id},"\n" if ($debug);
-			    $res = rest_to_canvas("DELETE","/api/v1/courses/".$en->{course_id}."/enrollments/".$en->{id}."?task=delete");
-			    if (!$res)
+			    if ($debug < 3) 
 			    {
-			    	print STDERR "Error deleting enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
+			    	$res = rest_to_canvas("DELETE","/api/v1/courses/".$en->{course_id}."/enrollments/".$en->{id}."?task=delete");
+			    	if (!$res)
+			    	{
+			    	    print STDERR "Error deleting enrollment $en->{id} for $dup but there's nothing I can do. Continuing\n";
+			    	}
 			    }
-
 			}
 			# Deleting the manual enrollment(s) removes the user from their course-related groups, so flip those
 			# group membership states from 'deleted' back to 'active'
