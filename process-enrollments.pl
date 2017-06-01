@@ -462,7 +462,7 @@ sub getTerm
 # We also check for observer roles in *any* section of a course. Observers are used for Auditors of a
 # course. They *may* also show up in the SIMS feed. If they do, don't re-add them as a student
 #
-# Support for manually added students: Students with no sis_source_id defined are treated almost identically
+# Support for manually added students: Students with no sis_import_id defined are treated almost identically
 # to observers, but are kept in a separate hash. For any 'manual' user who is enrolled in any section of a given
 # course and then shows up in the SIS source, they'll be deleted from the sections they were enrolled in manually,
 # then added to the section(s) via CSV. Since deleting a manual enrollment deletes the user from their groups,
@@ -582,7 +582,7 @@ sub generate_enrollments
 				next;
 			}
 			# Was this enrollment a manual student one?
-                        if (exists($en->{sis_source_id}) && ($en->{sis_source_id} eq "") && ($en->{type} eq "StudentEnrollment"))
+                        if (exists($en->{sis_import_id}) && ($en->{sis_import_id} eq "") && ($en->{type} eq "StudentEnrollment"))
 
 			{
 				# %manual is a hash whose values are arrays of enrollments for a given course
