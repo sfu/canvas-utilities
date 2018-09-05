@@ -45,7 +45,7 @@ my ($total_enrollments,%total_users,$total_sections);
 
 getopts('cshd:f:');
 
-push @enrollments_csv,"course_id,user_id,role,section_id,status,associated_user_id";
+$enrollments_csv_header = "course_id,user_id,role,section_id,status,associated_user_id\n";
 $users_csv = "user_id,login_id,password,first_name,last_name,short_name,email,status\n";
 push @sections_csv,"section_id,course_id,name,status";
 
@@ -947,49 +947,63 @@ sub process_user_adds
 # Run after we've imported any necessary users
 sub process_enrollments
 {
-	my ($enrollment_csv);
-	# Short circuit if there were no user adds
-	if ($users_need_adding)
+	my (@enrollment_csvs);
+	my $batch = 0;
+	
+	$enrollment_csvs[$batch] = $enrollments_csv_header;
+
+	$linecount = 0;
+	foreach my $line (@enrollments_csv)
 	{
-		foreach my $line (@enrollments_csv)
+		if ($line =~ /##(\w+)##/)
 		{
-			if ($line =~ /##(\w+)##/)
+			$u = $1;
+			if (defined($users_by_username{$u}))
 			{
-				$u = $1;
-				if (defined($users_by_username{$u}))
-				{
-					$uid = $users_by_username{$u}->{sis_user_id};
-					$line =~ s/##\w+##/$uid/;
-				}
-				else
-				{
-					print "ERROR: user $u not found in Canvas. Skipping enrollment for this user\n";
-					next;
-				}
+				$uid = $users_by_username{$u}->{sis_user_id};
+				$line =~ s/##\w+##/$uid/;
 			}
-			$enrollment_csv .= "$line\n";
+			else
+			{
+				print "ERROR: user $u not found in Canvas. Skipping enrollment for this user\n";
+				next;
+			}
+		}
+		$enrollment_csvs[$batch] .= "$line\n";
+		$linecount++;
+		# Break the CSV files into batches no larger than 1000 lines each to avoid hardcoded Canvas batch size limit
+		if (! $linecount % 1000)
+		{
+			$batch++;
+			$enrollment_csvs[$batch] = $enrollments_csv_header;
 		}
 	}
-	else
-	{
-		$enrollment_csv = join("\n",@enrollments_csv);
-	}
+	
 
 	if ($debug < 2)
 	{
 	    if (scalar(@enrollments_csv) > 1)
 	    {
-		print "Submitting ",scalar(@enrollments_csv)-1," enrollment changes to Canvas\n";
-		my $json = rest_to_canvas("POSTRAW","/api/v1/accounts/2/sis_imports.json?extension=csv",$enrollment_csv);
+			print "Submitting ",scalar(@enrollments_csv)-1," enrollment changes to Canvas in ",$batch+1," batches\n";
+			foreach $b (0..$batch)
+			{
+				my $json = rest_to_canvas("POSTRAW","/api/v1/accounts/2/sis_imports.json?extension=csv",$enrollment_csvs[$b]);
+				sleep 5;
+			}
 	    }
 	    else
 	    {
-		print "No enrollment changes to process\n";
+			print "No enrollment changes to process\n";
 	    }
 	}
 	else
 	{
-		print "Debug level 2+. These enrollments would have been processed: \n$enrollment_csv\n";
+		print "Debug level 2+. These enrollments would have been processed: \n";
+		foreach $b (0..$batch)
+		{
+			print "Batch $b\n";
+			print $enrollment_csvs[$b],"\n\n";
+		}
 	}
 }
 
