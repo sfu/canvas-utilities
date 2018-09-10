@@ -972,7 +972,7 @@ sub process_enrollments
 		$enrollment_csvs[$batch] .= "$line\n";
 		$linecount++;
 		# Break the CSV files into batches no larger than 1000 lines each to avoid hardcoded Canvas batch size limit
-		if (! $linecount % 1000)
+		if (! ($linecount % 1000))
 		{
 			$batch++;
 			$enrollment_csvs[$batch] = $enrollments_csv_header;
