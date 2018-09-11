@@ -16,8 +16,8 @@ $debug = 0;
 $stderr = "/tmp/process-enrollments.err";
 $stdout = "/tmp/process-enrollments.out";
 $cmd = "/opt/amaint/etc/process-enrollments.pl";
-$error_email = "hillman\@sfu.ca,mstanger\@sfu.ca,andrewleung\@sfu.ca";
-$info_email = "hillman\@sfu.ca,mstanger\@sfu.ca,andrewleung\@sfu.ca,patchin\@sfu.ca";
+$error_email = "hillman\@sfu.ca,mstanger\@sfu.ca,andrewleung\@sfu.ca,grahamb\@sfu.ca";
+$info_email = "hillman\@sfu.ca,mstanger\@sfu.ca,andrewleung\@sfu.ca,patchin\@sfu.ca,grahamb\@sfu.ca";
 
 ($sec,$min,$hour,$mday,$mon,$year,$wday,$yday,$isdst) = localtime(time);
 
