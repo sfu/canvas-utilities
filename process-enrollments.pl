@@ -13,6 +13,7 @@ use lib '/opt/amaint/etc/lib';
 use Canvas;
 #use awsomeLinux; 	# Local SFU library to handle SOAP calls to fetch course rosters
 use Rest;		# Local SFU Library to handle RestServer calls
+use Amaint; # Local SFU library to handle Amaint direct action calls
 use Switch;
 use Getopt::Std;
 
@@ -37,6 +38,9 @@ my ($courses,$sections,$users,$users_by_id,$users_by_username,$courses_by_id);
 # Global vars for the CSVs that will hold user-adds and enrollment changes
 my($users_csv,@enrollments_csv);
 my $users_need_adding = 0;
+
+# global var to hold computing IDs of new users for triggering UDD updates
+my @new_user_computing_ids;
 
 my ($currentTerm,$previousTerm);
 
@@ -737,6 +741,9 @@ sub add_new_users
 		$users_csv .= "$sfuid,$user,,$firstnames,$lastname,$givenname,$user\@sfu.ca,active\n";
 		$users_need_adding++;
 
+		# keep track of new user computing IDs so that we can trigger account updates later
+		push @new_user_computing_ids, $user;
+
 		# Bit of a hack, but we want to avoid pulling all users from Canvas if we're just
 		# processing one section, so add the users directly to our internal hashes
 		if (defined($opt_f))
@@ -937,6 +944,14 @@ sub process_user_adds
 
 		# Now fetch all users again from Canvas to update our user_id hash
 		fetch_users();
+
+		# Fire a UDD update for each imported user. 
+		# This is so that the amaint-canvas-jms process will 
+		# create communication channels for the new users.
+		# This is easier than getting the Canvas user ID of 
+		# each new user and publishing a CREATE_CANVAS_COMMUNICATION_CHANNEL message manually
+		push_account_updates(@new_user_computing_ids);
+		
 	}
 	else
 	{
@@ -1015,6 +1030,17 @@ sub summary()
 	print "Total unique users enrolled: ", scalar(keys %total_users),"\n";
 }
 
+sub push_account_updates
+{
+	foreach my $username (@new_user_computing_ids) 
+	{
+		print "Pushing account update for user $username" if $debug;
+		my $resp = push_account_update($username);
+		if ($resp eq "ok") {
+			print "Account update pushed for $username" if $debug;
+		}
+	}
+}
 
 # Utility functions below here
 #
