@@ -997,9 +997,9 @@ sub process_enrollments
 
 	if ($debug < 2)
 	{
-	    if (scalar(@enrollments_csv) > 1)
+	    if (scalar(@enrollments_csv) > 0)
 	    {
-			print "Submitting ",scalar(@enrollments_csv)-1," enrollment changes to Canvas in ",$batch+1," batches\n";
+			print "Submitting ",scalar(@enrollments_csv)," enrollment changes to Canvas in ",$batch+1," batches\n";
 			foreach $b (0..$batch)
 			{
 				my $json = rest_to_canvas("POSTRAW","/api/v1/accounts/2/sis_imports.json?extension=csv",$enrollment_csvs[$b]);
