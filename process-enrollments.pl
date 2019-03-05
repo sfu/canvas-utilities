@@ -65,8 +65,12 @@ push @sections_csv,"section_id,course_id,name,status";
 	# getService();
 	getTerm();
 	fetch_courses_and_sections($opt_c) or error_exit("Couldn't fetch courses and sections from Canvas!");
-	# Don't bother doing enrollment processing if we're doing a missing sections run
-	exit 0 if (defined($opt_s));
+	if (defined($opt_s))
+	{
+		add_new_sections();
+		# Don't bother doing enrollment processing if we're doing a missing sections run
+		exit 0
+	}
 
 	if (!defined($opt_f))
 	{
@@ -828,6 +832,37 @@ sub check_observers
 	    }
 	}
 }
+
+# Add missing sections to Canvas via CSV SIS Import
+sub add_new_sections
+{
+	# Exclude all deletions (regular and marked)
+	my @new_sections_csv = grep {!/,deleted\*?$/} @sections_csv;
+	my $new_sections_csv = join("\n", @new_sections_csv);
+	
+	if ($debug < 2)
+	{
+		if (scalar(@new_sections_csv) > 1) # First line is the header row
+		{
+			print "Submitting ",scalar(@new_sections_csv)-1," new sections to Canvas\n";
+			my $json = rest_to_canvas("POSTRAW","/api/v1/accounts/2/sis_imports.json?extension=csv",$new_sections_csv);
+			if ($json eq "0")
+			{
+				print "Received error trying to create new sections.\n";
+			}
+		}
+		else
+		{
+			print "No new sections to add.\n";
+		}
+	}
+	else
+	{
+		print "Debug level 2+. These sections would have been added: \n";
+		print "$new_sections_csv\n\n";
+	}
+}
+
 # Add new enrollments to the CSV file
 sub add_enrollments
 {
