@@ -11,7 +11,6 @@
 
 use lib '/opt/amaint/etc/lib';
 use Canvas;
-#use awsomeLinux; 	# Local SFU library to handle SOAP calls to fetch course rosters
 use Rest;		# Local SFU Library to handle RestServer calls
 use Amaint; # Local SFU library to handle Amaint direct action calls
 use Switch;
