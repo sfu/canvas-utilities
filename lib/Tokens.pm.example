@@ -1,0 +1,61 @@
+package Tokens;
+require Exporter;
+@ISA    = qw(Exporter);
+@EXPORT = qw(cookie auth_token mquser mqpass oauth_token);
+
+# Get _normandy_session cookie and authenticity token from an authenticated site admin session
+my $dashboard = "/tmp/.dashboard";
+my $cookie = "/tmp/.cookies";
+my $canvas_url = "http://localhost";
+my $site_admin = "admin";
+my $password = "******";
+my $login_url = "$canvas_url/login";
+
+my $cmd = `curl -c $cookie -u $site_admin:$password $login_url`;
+my $cmd = `curl -b $cookie $canvas_url -o $dashboard`;
+
+# OAuth token. At a minimum, you must define this to make API calls
+# To generate one, login to Canvas with a site-admin account, click on Settings, then "New Access Token"
+$oauth_token = "";
+
+# Session cookie and authenticity token. These must be taken from a "live" browser session
+# but are only needed if you intend to use the 'post' call in Canvas.pm to simulate
+# browser posts (required if you need functionality that hasn't been exposed through the Canvas API calls).
+# They are typically valid for about 12 hours from last use
+#
+$cookie = get_normandy_session_cookie();           
+$auth_token = get_auth_token();
+
+# Only needed for JMS communication
+# ActiveMQ Userid and password
+$mquser = "";
+$mqpass = "";
+
+# Grab from "view source" of a browser window for a logged in Canvas session for a site admin
+sub get_auth_token() {
+	open FILE, "<", $dashboard or die "Can't open $dashboard";
+	while (<FILE>) {
+		
+  		if ($_ =~ m/ajax_authenticity_token/) {
+			my $start = index($_, ">")+1;
+			return substr $_, $start, -7;
+  		}	
+	}
+	close FILE;
+	unlink $dashboard;
+}
+
+# The cookie is stored in the "_normandy_session" cookie
+sub get_normandy_session_cookie(){
+	open FILE, "<", $cookie or die "Can't open $cookie";
+	while (<FILE>) {		
+  		if ($_ =~ m/_normandy_session/) {  			
+			my $start = index($_, "_normandy_session")+18;
+			return substr $_, $start;
+  		}	
+	}
+	close FILE;
+	unlink $cookie;
+}
+
+1;
